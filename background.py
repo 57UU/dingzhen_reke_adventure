@@ -10,7 +10,7 @@ screen : pgzero.screen.Screen
 
 moving_speed=3
 
-
+difficulty=1 #约大越难
 
 class Scene:
     def __init__(self, width:int,height:int):
@@ -37,11 +37,15 @@ class Scene:
             self.elements.append(a)
             self.elements.append(a2)
 
+            doors=[choose_door_negtive(), choose_door_positive()]
+            random.shuffle(doors)
+            a.door=doors[0](a)
+            a2.door=doors[1](a2)
+
             # gc
             for element in self.elements:
                 if element.pos[1]>self.height+20:
                     self.elements.remove(element)
-                    del self.collided_actors[element]
         for element in self.elements:
             p=element.pos
             element.pos=(p[0],p[1]+moving_speed)
@@ -49,16 +53,83 @@ class Scene:
         self.actor.draw()
         for element in self.elements:
             element.draw()
+            element.door.draw()
     def gen_door(self):
         pass
 
 class Door:
     def __init__(self,doorActor:Actor):
         self.doorActor=doorActor
-    def invoke(self,mainActor:MainActor):
+    def invoke(self,doorActor:Actor):
         pass
     def draw(self):
         pass
+    def draw_text(self,text):
+        screen.draw.text(text,
+         self.doorActor.pos, 
+         fontsize=20,
+         fontname='s', 
+         color='black')
+
+class IncreaseDoor(Door):
+    def __init__(self,doorActor:Actor):
+        super().__init__(doorActor)
+        self.limit=3
+        self.count=0
+        self.colide_actors=[]
+    def invoke(self,actor:Actor):
+        if(self.count>=self.limit or actor in self.colide_actors):
+            return
+        if(self.doorActor.colliderect(actor)):
+            actor.increaseFlag+=1
+            self.colide_actors.append(actor)
+            self.count+=1
+    def draw(self):
+        self.draw_text(f"x+{self.limit}")
+
+class DecreaseDoor(Door):
+    def __init__(self,doorActor:Actor):
+        super().__init__(doorActor)
+        self.limit=3
+        self.count=0
+        self.colide_actors=[]
+    def invoke(self,actor:Actor):
+        if(self.count>=self.limit or actor in self.colide_actors):
+            return
+        if(self.doorActor.colliderect(actor)):
+            actor.increaseFlag=-1
+            self.colide_actors.append(actor)
+            self.count+=1
+    def draw(self):
+        self.draw_text(f"x-{self.limit}")
+
+class MultiplyDoor(Door):
+    def __init__(self,doorActor:Actor):
+        super().__init__(doorActor)
+        self.limit=3
+        self.count=0
+        self.colide_actors=[]
+    def invoke(self,actor:Actor):
+        if(self.count>=self.limit or actor in self.colide_actors):
+            return
+        if(self.doorActor.colliderect(actor)):
+            actor.increaseFlag=random.randint(1,3)
+            self.colide_actors.append(actor)
+            self.count+=1
+    def draw(self):
+        self.draw_text(f"x*{self.limit}")
+
+DoorPositive=[
+    IncreaseDoor,
+]
+DoorNegtive=[
+    DecreaseDoor
+]
+
+def choose_door_positive():
+    return random.choice(DoorPositive)
+def choose_door_negtive():
+    return random.choice(DoorNegtive)
 
 class MainActor:
     def __init__(self):
@@ -67,6 +138,7 @@ class MainActor:
         self.center_attraction = 0.2  # 中心点引力系数
         self.separation_distance = 80  # 排斥作用距离
         self.separation_strength = 0.2  # 排斥力强度
+        self.physicsCount=0
         
     def calculate_forces(self):
         # 计算中心点引力
@@ -81,6 +153,7 @@ class MainActor:
             for other in self.actors:
                 if actor != other:
                     dist = math.sqrt((actor.x-other.x)**2 + (actor.y-other.y)**2)
+                    dist=max(dist,1)
                     if dist < self.separation_distance:
                         repulse_x = (actor.x - other.x) / dist
                         repulse_y = (actor.y - other.y) / dist
@@ -89,27 +162,43 @@ class MainActor:
                         actor.dy += repulse_y * strength
 
     def tick(self):
+        del_actors_index=[]
+        index=0
         for actor in self.actors:
             if actor.increaseFlag>0:
                 for c in range(actor.increaseFlag):
                     self.actors.append(self.buildActor(actor.pos))
+                    actor.increaseFlag=0
             elif actor.increaseFlag<0:
-                del actor
-        self.delta_pos((0,moving_speed))
-        # 初始化速度变量
-        for actor in self.actors:
-            actor.dx = 0
-            actor.dy = 0
+                del_actors_index.append(index)
+            index+=1
+
+        for index in reversed(del_actors_index):
+            self.actors.pop(index)
             
-        # 计算各种力
-        self.calculate_forces()
+        self.delta_pos((0,moving_speed))
         
-        # 应用速度
+        if self.physicsCount%10==0:
+            self.physicsCount=0
+            # 初始化速度变量
+            for actor in self.actors:
+                actor.dx = 0
+                actor.dy = 0
+                
+            # 计算各种力
+            self.calculate_forces()
+            
+            # 应用速度
+            for actor in self.actors:
+                actor.x_target = actor.dx+actor.x
+                actor.y_target = actor.dy+actor.y
+        
+        self.physicsCount+=1
+
+        # 插值
         for actor in self.actors:
-            actor.x += actor.dx
-            actor.y += actor.dy
-        
-        
+            actor.x += (actor.x_target - actor.x) * 0.3
+            actor.y += (actor.y_target - actor.y) * 0.3
     def set_position(self,pos):
         self.pos=pos
     def getValue(self):
@@ -121,6 +210,9 @@ class MainActor:
             self.actors.pop()
     def delta_pos(self,delta):
         self.set_position((self.pos[0]+delta[0],self.pos[1]+delta[1]))
+        for actor in self.actors:
+            actor.x_target += delta[0]
+            actor.y_target += delta[1]
     def draw(self):
         for actor in self.actors:
             actor.draw()
@@ -137,5 +229,7 @@ class MainActor:
         if pos==None:
             pos=self.pos
         actor.pos=(pos[0]+random.randint(0,20),pos[1]+random.randint(0,20))
+        actor.x_target=actor.x
+        actor.y_target=actor.y
         actor.increaseFlag=0
         return actor

@@ -11,6 +11,8 @@ def empty_actor(width,height,color=(255,255,255)):
     actor.anchor=(width/2,height/2)
     actor._surf = pygame.Surface((width, height)) 
     actor._surf.fill(color)
+    actor.width=width
+    actor.height=height
     return actor
 
 class GifActor():
