@@ -4,6 +4,7 @@ import pgzero
 from pgzero.actor import Actor
 import math
 from pgzero.rect import Rect
+import random
 
 screen : pgzero.screen.Screen
 
@@ -34,7 +35,7 @@ def empty_actor(width,height,color=(255,255,255)):
     actor.width=width
     actor.height=height
     return actor
-from typing import List,Tuple
+from typing import List,Tuple, override
 def get_images_from_folder(folder_path)->List[pygame.Surface]:
     images = []
     folder_path =f"images/{folder_path}"
@@ -108,7 +109,9 @@ def ratio_to_color(ratio): #根据比例返回颜色
         return (255,255,0)
     else:
         return (255,0,0)
-def draw_health_bar(value:int,max_health:int,position:Tuple[int,int],size:Tuple[int,int]=(100,20),color=(0,0,0),tips=""):
+def draw_health_bar(value:int,max_health:int,position:Tuple[int,int],size:Tuple[int,int]=(100,20),color=(0,0,0),tips="",x_center_flag=False):
+    if x_center_flag:
+        position=(position[0]-size[0]/2,position[1])
     screen.draw.rect(Rect(position,size),color)
     margin=2
     inner_width=size[0]-2*margin
@@ -147,3 +150,15 @@ class TextActor(Actor):
             color=self.color,
             fontsize=self.fontsize,
             fontname='ys', )
+
+def vector_y_offset(vector,offset): 
+    x,y=vector
+    return (x,y+offset)
+
+environments=get_images_from_folder("env")
+
+class RandomEnvironment(Actor):
+    def __init__(self,size:Tuple[int,int]=(100,100)):
+        super().__init__("placeholder")
+        self._surf=random.choice(environments)
+        scale(self,*size)

@@ -51,6 +51,8 @@ def update():
         moving[1]=-1
     if keys.DOWN in keys_pressed:
         moving[1]=1
+    if keys.F in keys_pressed:
+        mainActor.attack()
     mainActor.handle_moving(*moving)
 
     mainActorPos=mainActor.get_position()
@@ -62,7 +64,8 @@ def update():
     for element in scene.doors:
         if element.colliderect(mainActor.actor):
             element.attr.on_enter(mainActor)
-
+    for element in scene.tools:
+        element.invoke(mainActor)
     clock.tick(60)
 
 

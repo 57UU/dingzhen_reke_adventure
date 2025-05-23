@@ -27,6 +27,7 @@ class MainActor:
         self.inventory=[] #背包
         self.actor=Actor("dz")
         img_size=(100,100)
+        self.img_size=img_size
         scale(self.actor,*img_size)
         scale_without_img(self.actor,0.5)
         self.actor.pos=(100,100)
@@ -36,14 +37,36 @@ class MainActor:
         self.dz_normal=load_png_with_scale("dz",img_size)
         self.dz_cry=load_png_with_scale("dz-cry",img_size)
         self.cry_value=0
+        self.body=Body()
+        self.direction=1 #1:right -1:left
+        self.attack_cd=0
     def set_position(self,position): #设置位置
         self.actor.pos=position
+        self.body.actor.x=position[0]+self.img_size[0]/4
+        self.body.actor.y=position[1]+90
     def be_attacked(self,damage):
         self.health-=damage
         self.cry_value=10
     def get_position(self): #获取位置
         return self.actor.pos
+    def attack(self): #攻击
+        if self.attack_cd>0:
+            return
+        if self.reke_power<=0:
+            return
+        self.reke_power-=1
+        self.attack_cd=0.5
     def handle_moving(self,x,y): 
+        if x<0:
+            self.body.direction=-1
+            self.direction=-1
+            self.body.state=2
+        elif x>0:
+            self.body.direction=1
+            self.direction=1
+            self.body.state=2
+        else:
+            self.body.state=1
         pos_x,pos_y=self.get_position()
         pos_x+=x*self.moving_speed
         pos_y+=y*self.moving_speed
@@ -63,23 +86,68 @@ class MainActor:
         self.set_position((pos_x,pos_y))
             
     def draw(self):
+        self.body.draw()
         self.actor.draw() 
         bar_zise=(300,30)
         draw_health_bar(self.health,self.max_health,(0,0),bar_zise,tips="生命值")
         draw_health_bar(self.reke_power,self.reke_max_power,(screen_width-310,0),bar_zise,tips="锐克电量")
         text=f"速度：{padding(self.moving_speed)}"
         draw_text(text,(0,40))
-        t2=f"武器：锐克{self.reke_version}代"
+        t2=f"武器：锐克{self.reke_version}代 使用[F]攻击"
         draw_text(t2,(0,60))
         t3=f"第{padding(level_count)}关"
         draw_text(t3,(400,0))
         
+        
     def tick(self):
+        self.body.tick()
         if self.cry_value>0:
             self.actor._surf=self.dz_cry
             self.cry_value-=0.5
         else:
             self.actor._surf=self.dz_normal
+        if self.attack_cd>0:
+            self.attack_cd-=elapsed_time_frame
+
+class Body:
+    def __init__(self):
+        self.runlefts=[]
+        self.runrights=[]
+        size=(100,60)
+        for i in range(8):
+            img=load_png_with_scale(f"animation/runleft{i}",size)
+            self.runlefts.append(img)
+            self.runrights.append(pygame.transform.flip(img,True,False))
+        self.count=0
+        self.timer=0
+        self.standleft=load_png_with_scale("animation/standleft",size)
+        self.standright=load_png_with_scale("animation/standright",size)
+        self.actor=Actor("placeholder")
+        scale(self.actor,*size)
+        self.actor._surf=self.standright
+        self.direction=1 #1:right -1:left
+        self.state=1 #1:stand 2:run
+    def tick(self):
+
+        if self.state==1:
+            if self.direction==1:
+                self.actor._surf=self.standright
+            else:
+                self.actor._surf=self.standleft
+            self.count=0
+            self.timer=0
+        elif self.state==2:
+            if self.direction==1:
+                self.actor._surf=self.runrights[int(self.count)]
+            else:
+                self.actor._surf=self.runlefts[int(self.count)]
+        self.timer+=elapsed_time_frame
+        if self.timer>100:
+            self.timer=0
+            self.count=(self.count+1)%8
+    def draw(self):
+        self.actor.draw()
+
 
 class Scene:
     def __init__(self,width,height,mainActor):
@@ -91,37 +159,36 @@ class Scene:
         self.doors=[] #门 
         self.elements=[tips] #场景静态元素
         self.actors=[] #场景动态元素
+        self.tools=[] #道具
+        self.lists=[self.doors,self.elements,self.actors,self.tools]
         self.background=empty_actor(width,height,(255,255,255))
         self.deltaXCount=0
         self.generate_level()
         
     def delta_x(self,delta): 
         self.deltaXCount+=-delta
-        for element in self.doors:
-            element.x+=delta
-        for actor in self.actors:
-            actor.x+=delta
-        for element in self.elements:
-            element.x+=delta
+        for list in self.lists:
+            for element in list:
+                element.x+=delta
         # self.background.x+=delta
 
         #gc
         thershold=-self.width*1.5
-        for element in self.doors:
-            if element.x<thershold:
-                self.doors.remove(element)
-        for actor in self.actors:
-            if actor.x<thershold:
-                self.actors.remove(actor)
-        for element in self.elements:
-            if element.x<thershold:
-                self.elements.remove(element)
+        for list in self.lists:
+            for element in list:
+                if element.x<thershold:
+                    list.remove(element)
     def tick(self): 
         if self.deltaXCount>=self.width:
             self.deltaXCount-=self.width
             self.generate_level()
         for enemy in self.actors:
             enemy.attr.tick()
+    def get_random_point(self,margin=100): 
+        x_offset=self.deltaXCount+self.width
+        x=random.uniform(x_offset+margin,x_offset+self.width-margin)
+        y = random.uniform(margin, self.height - margin)
+        return (x,y)
     def generate_level(self):
         global level_count
         level_count+=1
@@ -136,6 +203,20 @@ class Scene:
         door2.attr=get_random_door()(door2)
         door1.attr.other=door2.attr
         door2.attr.other=door1.attr
+
+        if random.random()<0.5:
+            battery=Battery()
+            battery.pos=self.get_random_point()
+            self.tools.append(battery)
+        if random.random()<0.5:
+            nicotine=Nicotine()
+            nicotine.pos=self.get_random_point()
+            self.tools.append(nicotine)
+
+        for i in range(10):
+            environment=RandomEnvironment()
+            environment.pos=self.get_random_point()
+            self.elements.append(environment)
 
         cat_ememy=GifActor("cat",(100,100))
         cat_ememy.pos=(x_offset+self.width*2/3,self.height/2)
@@ -152,6 +233,8 @@ class Scene:
             actor.attr.draw()
         for element in self.elements:
             element.draw()
+        for tool in self.tools:
+            tool.draw()
 
 
 
@@ -233,11 +316,11 @@ class EnemyData:
     def draw(self):
         screen.draw.text(
             self.tips, 
-            self.actor.pos,
+            center=vector_y_offset(self.actor.pos,-45),
             color="black",
             fontsize=20,
             fontname='ys', )
-        draw_health_bar(self.health,self.max_health,self.actor.pos,(100,10)) #绘制血条
+        draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-30),(100,10),x_center_flag=True) #绘制血条
 
 
 
@@ -253,3 +336,40 @@ class CatEnemy(EnemyData):
             self.mainActor.be_attacked(10)
             self.cd=200
             
+
+class Tool(Actor):
+    def __init__(self,image):
+        super().__init__(image)
+        scale(self,100,100)
+        self.tips="default"
+        self.isUsed=False
+    @override
+    def draw(self):
+        if self.isUsed:
+            return
+        super().draw()
+        draw_text_center(self.tips,vector_y_offset(self.pos,50))
+    def invoke(self,mainActor:MainActor):
+        if self.isUsed:
+            return
+        if self.colliderect(mainActor.actor):
+            self.isUsed=True
+            self.onUse(mainActor)
+    def onUse(self,mainActor:MainActor):
+        pass
+
+class Nicotine(Tool):
+    def __init__(self):
+        super().__init__("nicotine")
+        self.tips="尼古丁"
+    @override
+    def onUse(self,mainActor:MainActor):
+        mainActor.reke_version+=1
+
+class Battery(Tool):
+    def __init__(self):
+        super().__init__("battery")
+        self.tips="电池"
+    @override
+    def onUse(self,mainActor:MainActor):
+        mainActor.reke_power=min(mainActor.reke_max_power,mainActor.reke_power+1)
