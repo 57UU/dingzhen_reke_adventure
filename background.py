@@ -29,7 +29,7 @@ class MainActor:
         self.img_size=img_size
         scale(self.actor,*img_size)
         scale_without_img(self.actor,0.5)
-        self.actor.pos=(200,assets.screen_height/2)
+        self.actor.pos=(assets.screen_width*2/3,assets.screen_height/2)
         self.reke_version=1
         self.reke_max_power=5
         self.reke_power:int=5
@@ -40,12 +40,14 @@ class MainActor:
         self.direction=1 #1:right -1:left
         self.attack_cd_counter=0
         self.attack_cd=600 #ms
-        self.normal_attack_ui=CDableAttackUI(EnhancedActor("cigarette"),self.attack_cd,"[F]烟圈")
-        self.big_reke_ui=CDableAttackUI(EnhancedActor("explode-reke"),self.attack_cd*5,"[R]锐克")
+        self.normal_attack_ui=CDableAttackUI(EnhancedActor("cigarette-circle"),self.attack_cd,"[1]烟圈")
+        self.big_reke_ui=CDableAttackUI(EnhancedActor("explode-reke"),self.attack_cd*5,"[2]炸锐")
+        self.reke_to_health_ui=CDableAttackUI(EnhancedActor("reke-rec"),self.attack_cd*10,"[3]恢复")
         self.tip_text=""
         self.tip_text_timer=0
         self.scene:Scene
         self.cigarette=Cigarette()
+        self.smoke=CDableAttackUI(EnhancedActor("placeholder"),self.attack_cd,"invisable")
     def set_tip_text(self,text): #设置提示文本
         self.tip_text=text
         self.tip_text_timer=1200
@@ -76,9 +78,20 @@ class MainActor:
             return
         self.reke_power-=1
         self.normal_attack_ui.use()
-
+        self.smoke.use()
         attack_entity=SmokeAttack(self.direction,self.get_position(),self.reke_version)
         self.scene.self_misiles.append(attack_entity)
+    def use_reke_to_health(self): #使用锐克恢复
+        if self.reke_power<1:
+            self.set_tip_text("锐克电量不足!!! 恢复需要1格电量")
+            return
+        if not self.reke_to_health_ui.can_use():
+            self.set_tip_text("冷却中!!!")
+            return
+        self.reke_power-=1
+        self.reke_to_health_ui.use()
+        self.health+=20
+        self.smoke.use()
     def use_big_reke(self): #使用大锐克
         if self.reke_power<3:
             self.set_tip_text("锐克电量不足!!! 大招需要3格电量")
@@ -130,7 +143,7 @@ class MainActor:
         bar_zise=(300,30)
         draw_health_bar(max(self.health,0),self.max_health,(0,0),bar_zise,tips="生命值")
         draw_health_bar(self.reke_power,self.reke_max_power,(assets.screen_width-310,0),bar_zise,tips="锐克电量")
-        text=f"速度：{padding(self.moving_speed)}"
+        text=f"速度：{padding(self.moving_speed):.1f}"
         draw_text(text,(0,40))
         t2=f"武器：锐克{self.reke_version}代"
         draw_text(t2,(0,60))
@@ -140,6 +153,7 @@ class MainActor:
         # draw_health_bar(self.attack_cd_counter,self.attack_cd,(assets.screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
         self.normal_attack_ui.draw()
         self.big_reke_ui.draw()
+        self.reke_to_health_ui.draw()
 
         if self.tip_text_timer>0:
             draw_text(self.tip_text,(0,assets.screen_height-30),color="red")
@@ -149,7 +163,7 @@ class MainActor:
             main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))  
 
             screen.draw.rect(main_actor_rect, "red")
-        if self.attack_cd_counter>0:
+        if self.smoke.cd>0:
             self.cigarette.draw()
         
     def tick(self):
@@ -239,7 +253,7 @@ class Scene:
         self.width=width
         self.height=height
         self.mainActor=mainActor
-        tips=TextActor("向右移动以开始>>>\n按下[F]使用锐克攻击\n按下[R]使用大招\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
+        tips=TextActor("向右移动以开始>>>\n按下[1]使用锐克攻击\n按下[2]使用大招\n按下[3]抽锐克恢复生命值\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
         tips.pos=(width/2,height/2)
         self.doors=[] #门 
         self.elements=[tips] #场景静态元素

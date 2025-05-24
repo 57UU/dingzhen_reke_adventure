@@ -234,7 +234,7 @@ class Effect():
     def invoke(self):
         pass
     def on_finish(self):
-        pass
+        effects.remove(self)
 
 class DiffuseEffect(Effect):
     def __init__(self,target,direction):

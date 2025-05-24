@@ -64,7 +64,7 @@ def update():
             moving[1]=-1
         if keys.DOWN in keys_pressed:
             moving[1]=1
-        if keys.F in keys_pressed:
+        if keys.K_1 in keys_pressed:
             mainActor.attack()
         mainActor.handle_moving(*moving)
 
@@ -93,8 +93,10 @@ def update():
 
 def on_key_down(key):
     keys_pressed.add(key)
-    if key==keys.R:
+    if key==keys.K_2:
         mainActor.use_big_reke()
+    if key==keys.K_3:
+        mainActor.use_reke_to_health()
 
 def on_key_up(key):
     keys_pressed.remove(key)
