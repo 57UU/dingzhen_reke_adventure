@@ -143,7 +143,7 @@ class MainActor:
         bar_zise=(300,30)
         draw_health_bar(max(self.health,0),self.max_health,(0,0),bar_zise,tips="生命值")
         draw_health_bar(self.reke_power,self.reke_max_power,(assets.screen_width-310,0),bar_zise,tips="锐克电量")
-        text=f"速度：{padding(self.moving_speed):.1f}"
+        text=f"速度：{padding(f"{self.moving_speed:.1f}")}"
         draw_text(text,(0,40))
         t2=f"武器：锐克{self.reke_version}代"
         draw_text(t2,(0,60))
@@ -462,6 +462,7 @@ class EnemyData:
         self.door=door
         self.x_range_lim=x_range_lim
         self.cd=0 #milliseconds
+        self.text_y_offset=-35
     def attacked(self,damage): #被攻击
         self.health-=damage
         if self.health<=0:
@@ -485,11 +486,11 @@ class EnemyData:
         if self.actor.visible:
             screen.draw.text(
                 self.tips, 
-                center=vector_y_offset(self.actor.pos,-45),
+                center=vector_y_offset(self.actor.pos,self.text_y_offset-15),
                 color="black",
                 fontsize=20,
                 fontname='ys', )
-            draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-35),(100,10),x_center_flag=True) #绘制血条
+            draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,self.text_y_offset),(100,10),x_center_flag=True) #绘制血条
             if assets.debug:
                 left=self.actor.x-self.actor.width/2
                 top=self.actor.y-self.actor.height/2
@@ -525,6 +526,7 @@ class ExplosiveCatEnemy(EnemyData):
         self.max_health=50
         self.health=50
         self.moving_speed=1
+        self.text_y_offset=-55
     def tick(self):
         super().tick()
         if not self.actor.visible:
@@ -542,6 +544,9 @@ class ExplosiveCatEnemy(EnemyData):
         attr= ExplosiveCatEnemy(bind,mainActor,door,x_range_lim)
         bind.attr=attr
         return bind
+
+class Boss(EnemyData):
+    pass
 
 class Tool(Actor):
     def __init__(self,image):
