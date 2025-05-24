@@ -27,18 +27,21 @@ keys_pressed=set()
 mainActor=MainActor()
 scene = Scene(WIDTH,HEIGHT,mainActor)
 mainActor.scene=scene
-
+loseActor=TextActor("你输了",30)
+loseActor.color=(200,25,25)
+loseActor.pos=(WIDTH/2,HEIGHT/2)
+loseActor.visible=False
 
 def draw():
     screen.clear()
     scene.draw()
     mainActor.draw()
+    loseActor.draw()
 
 clock = pygame.time.Clock()
 def update():
-    global clock
+    global clock,loseActor
     assets.elapsed_time_frame=clock.get_time()
-    
     background.screen=screen
     utils.screen=screen
     scene.tick()
@@ -47,44 +50,49 @@ def update():
     for effect in effects:
         effect.tick()
     mainActor.tick()
-    moving=[0,0]
-    if keys.RIGHT in keys_pressed:
-        moving[0]=1
-    if keys.LEFT in keys_pressed:
-        moving[0]=-1
-    if keys.UP in keys_pressed:
-        moving[1]=-1
-    if keys.DOWN in keys_pressed:
-        moving[1]=1
-    if keys.F in keys_pressed:
-        mainActor.attack()
-    mainActor.handle_moving(*moving)
+    if mainActor.isLosed:
+        loseActor.visible=True
+    else:
+        moving=[0,0]
+        if keys.RIGHT in keys_pressed:
+            moving[0]=1
+        if keys.LEFT in keys_pressed:
+            moving[0]=-1
+        if keys.UP in keys_pressed:
+            moving[1]=-1
+        if keys.DOWN in keys_pressed:
+            moving[1]=1
+        if keys.F in keys_pressed:
+            mainActor.attack()
+        mainActor.handle_moving(*moving)
 
-    mainActorPos=mainActor.get_position()
-    if mainActorPos[0]>WIDTH*3/4:
-        deltaX=mainActorPos[0]-WIDTH*3/4
-        mainActor.set_position((mainActorPos[0]-deltaX,mainActorPos[1]))
-        scene.delta_x(-deltaX)
-    
-    for element in scene.doors:
-        if element.colliderect(mainActor.actor):
-            element.attr.on_enter(mainActor)
-    for element in scene.tools:
-        element.invoke(mainActor)
-    for attack in scene.self_misiles:
-        for enemy in scene.actors:
-            if not enemy.visible:
-                continue
-            attack.try_attack(enemy)
-    for attack in scene.enemy_misiles:
-        if not attack.visible:
-                continue
-        attack.try_attack(mainActor)
+        mainActorPos=mainActor.get_position()
+        if mainActorPos[0]>WIDTH*3/4:
+            deltaX=mainActorPos[0]-WIDTH*3/4
+            mainActor.set_position((mainActorPos[0]-deltaX,mainActorPos[1]))
+            scene.delta_x(-deltaX)
+
+        for element in scene.doors:
+            if element.colliderect(mainActor.actor):
+                element.attr.on_enter(mainActor)
+        for element in scene.tools:
+            element.invoke(mainActor)
+        for attack in scene.self_misiles:
+            if not attack.visible:
+                    continue
+            for enemy in scene.actors:
+                attack.try_attack(enemy)
+        for attack in scene.enemy_misiles:
+            if not attack.visible:
+                    continue
+            attack.try_attack(mainActor)
     clock.tick(60)
 
 
 def on_key_down(key):
     keys_pressed.add(key)
+    if key==keys.R:
+        mainActor.use_big_reke()
 
 def on_key_up(key):
     keys_pressed.remove(key)

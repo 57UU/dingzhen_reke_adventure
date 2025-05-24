@@ -18,6 +18,7 @@ level_count=0
 
 class MainActor: 
     def __init__(self):
+        self.isLosed=False 
         self.health=100 #生命值
         self.max_health=100 #最大生命值
         self.score=0 #分数
@@ -28,7 +29,7 @@ class MainActor:
         self.img_size=img_size
         scale(self.actor,*img_size)
         scale_without_img(self.actor,0.5)
-        self.actor.pos=(100,100)
+        self.actor.pos=(200,assets.screen_height/2)
         self.reke_version=1
         self.reke_max_power=5
         self.reke_power=5
@@ -41,7 +42,7 @@ class MainActor:
         self.attack_cd=400 #ms
         self.tip_text=""
         self.tip_text_timer=0
-        self.scene=None
+        self.scene:Scene
         self.cigarette=Cigarette()
     def set_tip_text(self,text): #设置提示文本
         self.tip_text=text
@@ -60,6 +61,8 @@ class MainActor:
     def be_attacked(self,damage):
         self.health-=damage
         self.cry_value=10
+        if self.health<=0:
+            self.isLosed=True
     def get_position(self): #获取位置
         return self.actor.pos
     def attack(self): #攻击
@@ -73,6 +76,16 @@ class MainActor:
 
         attack_entity=SmokeAttack(self.direction,self.get_position(),self.reke_version)
         self.scene.self_misiles.append(attack_entity)
+    def use_big_reke(self): #使用大锐克
+        if self.reke_power<3:
+            self.set_tip_text("锐克电量不足!!! 大招需要3格电量")
+            return
+        angle=0
+        self.reke_power-=3
+        for i in range(8):
+            misile=CigaretteAttack(self.get_position(),angle,self.reke_version)
+            self.scene.self_misiles.append(misile)
+            angle+=math.pi/4
     def handle_moving(self,x,y): 
         if x<0:
             self.body.direction=-1
@@ -108,7 +121,7 @@ class MainActor:
         self.body.draw()
         self.actor.draw() 
         bar_zise=(300,30)
-        draw_health_bar(self.health,self.max_health,(0,0),bar_zise,tips="生命值")
+        draw_health_bar(max(self.health,0),self.max_health,(0,0),bar_zise,tips="生命值")
         draw_health_bar(self.reke_power,self.reke_max_power,(assets.screen_width-310,0),bar_zise,tips="锐克电量")
         text=f"速度：{padding(self.moving_speed)}"
         draw_text(text,(0,40))
@@ -217,7 +230,7 @@ class Scene:
         self.width=width
         self.height=height
         self.mainActor=mainActor
-        tips=TextActor("向右移动以开始>>>\n按下[F]使用锐克攻击\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
+        tips=TextActor("向右移动以开始>>>\n按下[F]使用锐克攻击\n按下[R]使用大招\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
         tips.pos=(width/2,height/2)
         self.doors=[] #门 
         self.elements=[tips] #场景静态元素
@@ -242,7 +255,8 @@ class Scene:
         for list in self.lists:
             clear_list=[]
             for i in range(len(list)):
-                if list[i].x<thershold:
+                obj=list[i]
+                if obj.x<thershold or ("visible" in obj.__dict__ and not obj.visible):
                     clear_list.append(i)
             for i in reversed(clear_list):
                 list.pop(i)

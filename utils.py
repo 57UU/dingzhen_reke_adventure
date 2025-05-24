@@ -29,8 +29,11 @@ class EmptyActor(Actor):
         self._handle_unexpected_kwargs(kwargs)
         self.__dict__["_rect"] = ZRect((0, 0), (0, 0))
         self._orig_surf=self._surf=placeholder_image
+        self.visible=True
         # self._init_position(pos, anchor, **kwargs)
-
+    def draw(self):
+        if self.visible:
+            super().draw()
 def get_empty_actor():
     return EmptyActor()
 
@@ -48,6 +51,12 @@ def scale_center(actor,new_width,new_height):
     actor.height=new_height
     actor.x-=(new_width-old_width)/2
     actor.y-=(new_height-old_height)/2
+    actor.anchor=(actor.width/2,actor.height/2)
+
+def scale_ratio(actor:Actor,ratio):
+    actor._orig_surf = actor._surf=pygame.transform.scale(actor._surf, (actor.width*ratio, actor.height*ratio))
+    actor.width=actor.width*ratio
+    actor.height=actor.height*ratio
     actor.anchor=(actor.width/2,actor.height/2)
 
 def scale_without_img(actor,ratio):
@@ -139,12 +148,12 @@ def draw_text(text,position,color=text_color):
         fontname='ys', 
         color=color)
 
-def draw_text_center(text,position):
+def draw_text_center(text,position,color=text_color):
     screen.draw.text(text,
         center=position,
         fontsize=20,
         fontname='ys', 
-        color=text_color)
+        color=color)
 def ratio_to_color(ratio): #根据比例返回颜色
     if ratio>0.5:
         return (0,255,0)
@@ -187,6 +196,8 @@ class TextActor(EmptyActor):
         self.anchor=(w/2,h/2)
         
     def draw(self):
+        if not self.visible:
+            return
         screen.draw.text(
             self.text, 
             center=self.pos,
@@ -236,16 +247,21 @@ class DiffuseEffect(Effect):
         self.target.x+=x_delta
     def on_finish(self):
         self.target._surf=placeholder_image
+        self.target.visible=False
 
 class RepelEffect(Effect):
-    def __init__(self,target,direction,strength=300):
+    def __init__(self,target,direction,strength=300.0,isVanish=False):
         super().__init__(target,500)
         self.direction=direction
         self.strength=strength
+        self.isVanish=isVanish
     def invoke(self):
         self.target.x+=self.direction[0]*self.strength*assets.elapsed_time_frame/1000
         self.target.y+=self.direction[1]*self.strength*assets.elapsed_time_frame/1000
-
+    def on_finish(self):
+        if self.isVanish:
+            self.target._surf=placeholder_image
+            self.target.visible=False
 class ExplosionEffect(Effect):
     def __init__(self,target,time=500,strength=3):
         super().__init__(target,time)
@@ -288,7 +304,6 @@ class SmokeAttack(Attack):
         direction=normalize(enemy.x-self.x,enemy.y-self.y,0)
         RepelEffect(enemy,direction,self.strength)
 
-
 class ExplodeAttack(Attack):
     def __init__(self,strength,pos):
         super().__init__("explode")
@@ -297,3 +312,19 @@ class ExplodeAttack(Attack):
         ExplosionEffect(self,100,self.strength)
     def attack(self,enemy):
         enemy.attacked(50)
+
+cigarette_surface=pygame.image.load("./images/cigarette.png")
+
+class CigaretteAttack(Attack):
+    def __init__(self,pos,angle,reke_version):
+        super().__init__("cigarette-2")
+        direction=(math.cos(angle),math.sin(angle))
+        scale_ratio(self,0.5)
+        self.angle=-mapping.rad_to_deg(angle)
+        
+        self.pos=pos
+        self.damage=mapping.reke_version_cigarette_damage(reke_version)
+        RepelEffect(self,direction,500,isVanish=True)
+    @override
+    def attack(self,enemy):
+        enemy.attr.attacked(self.damage)
