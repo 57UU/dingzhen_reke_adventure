@@ -5,6 +5,7 @@ from pgzero.actor import Actor
 import math
 from pgzero.rect import Rect,ZRect
 import random
+from assets import *
 
 screen : pgzero.screen.Screen
 
@@ -179,3 +180,13 @@ class RandomEnvironment(EmptyActor):
         super().__init__()
         self._surf=random.choice(environments)
         scale(self,*size)
+
+effects=[]
+
+class Effect():
+    def __init__(self,target,time):
+        self.target=target
+        self.time=time
+        effects.append(self)
+    def tick(self):
+        pass

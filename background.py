@@ -14,10 +14,6 @@ difficulty=1 #约大越难
 x_left_door=None
 level_count=0
 
-screen_width=-1
-screen_height=-1
-
-elapsed_time_frame=0
 
 class MainActor: 
     def __init__(self):
@@ -97,7 +93,7 @@ class MainActor:
         self.actor.draw() 
         bar_zise=(300,30)
         draw_health_bar(self.health,self.max_health,(0,0),bar_zise,tips="生命值")
-        draw_health_bar(self.reke_power,self.reke_max_power,(screen_width-310,0),bar_zise,tips="锐克电量")
+        draw_health_bar(self.reke_power,self.reke_max_power,(assets.screen_width-310,0),bar_zise,tips="锐克电量")
         text=f"速度：{padding(self.moving_speed)}"
         draw_text(text,(0,40))
         t2=f"武器：锐克{self.reke_version}代 使用[F]攻击"
@@ -105,10 +101,10 @@ class MainActor:
         t3=f"第{padding(level_count)}关"
         draw_text(t3,(400,0))
 
-        draw_health_bar(self.attack_cd_counter,self.attack_cd,(screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
+        draw_health_bar(self.attack_cd_counter,self.attack_cd,(assets.screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
 
         if self.tip_text_timer>0:
-            draw_text(self.tip_text,(0,screen_height-30))
+            draw_text(self.tip_text,(0,assets.screen_height-30))
         if assets.debug:
             left=self.actor.x-self.actor.width/2
             top=self.actor.y-self.actor.height/2
@@ -125,12 +121,12 @@ class MainActor:
         else:
             self.actor._surf=self.dz_normal
         if self.attack_cd_counter>0:
-            self.attack_cd_counter-=elapsed_time_frame
+            self.attack_cd_counter-=assets.elapsed_time_frame
         elif self.attack_cd_counter<0:
             self.attack_cd_counter=0
         
         if self.tip_text_timer>0:
-            self.tip_text_timer-=elapsed_time_frame
+            self.tip_text_timer-=assets.elapsed_time_frame
 
 class Body:
     def __init__(self):
@@ -164,7 +160,7 @@ class Body:
                 self.actor._surf=self.runrights[int(self.count)]
             else:
                 self.actor._surf=self.runlefts[int(self.count)]
-        self.timer+=elapsed_time_frame
+        self.timer+=assets.elapsed_time_frame
         if self.timer>100:
             self.timer=0
             self.count=(self.count+1)%8
@@ -200,9 +196,13 @@ class Scene:
         #gc
         thershold=-self.width*1.5
         for list in self.lists:
-            for element in list:
-                if element.x<thershold:
-                    list.remove(element)
+            clear_list=[]
+            for i in range(len(list)):
+                if list[i].x<thershold:
+                    clear_list.append(i)
+            for i in reversed(clear_list):
+                list.pop(i)
+                pass
     def tick(self): 
         if self.deltaXCount>=self.width:
             self.deltaXCount-=self.width
@@ -353,7 +353,7 @@ class EnemyData:
         self.cd=0 #milliseconds
     def tick(self):
         if self.cd>0:
-            self.cd-=elapsed_time_frame
+            self.cd-=assets.elapsed_time_frame
             return
         x_direction=self.mainActor.get_position()[0]-self.actor.pos[0]
         y_direction=self.mainActor.get_position()[1]-self.actor.pos[1]

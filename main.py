@@ -19,8 +19,8 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 WIDTH = 1000
 HEIGHT = 600
 
-background.screen_height=HEIGHT
-background.screen_width=WIDTH
+assets.screen_height=HEIGHT
+assets.screen_width=WIDTH
 
 keys_pressed=set()
 
@@ -36,7 +36,7 @@ def draw():
 clock = pygame.time.Clock()
 def update():
     global clock
-    background.elapsed_time_frame=clock.get_time()
+    assets.elapsed_time_frame=clock.get_time()
     
     background.screen=screen
     utils.screen=screen
