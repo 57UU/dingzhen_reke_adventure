@@ -12,6 +12,8 @@ import utils
 screen : pgzero.screen.Screen
 keyboard: pgzero.keyboard.Keyboard  
 import os
+import assets
+
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 WIDTH = 1000

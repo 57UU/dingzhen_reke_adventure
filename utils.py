@@ -20,7 +20,7 @@ def scale_without_img(actor,ratio):
 
     actor.width=actor.width*ratio
     actor.height=actor.height*ratio
-    actor.anchor=(actor.width/2,actor.height/2)
+    # actor.anchor=(actor.width/2,actor.height/2)
 
 def load_png_with_scale(filename,size):
     img=pygame.image.load("./images/"+filename+".png")

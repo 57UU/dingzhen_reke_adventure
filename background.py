@@ -6,6 +6,7 @@ import pygame
 import random
 import math
 from utils import *
+import assets
 screen : pgzero.screen.Screen
 
 moving_speed=3
@@ -39,23 +40,29 @@ class MainActor:
         self.cry_value=0
         self.body=Body()
         self.direction=1 #1:right -1:left
-        self.attack_cd=0
+        self.attack_cd_counter=0
+        self.attack_cd=400 #ms
+        self.tip_text=""
+        self.tip_text_timer=0
+    def set_tip_text(self,text): #设置提示文本
+        self.tip_text=text
+        self.tip_text_timer=1200
     def set_position(self,position): #设置位置
         self.actor.pos=position
-        self.body.actor.x=position[0]+self.img_size[0]/4
-        self.body.actor.y=position[1]+90
+        self.body.actor.x=position[0]
+        self.body.actor.y=position[1]+60
     def be_attacked(self,damage):
         self.health-=damage
         self.cry_value=10
     def get_position(self): #获取位置
         return self.actor.pos
     def attack(self): #攻击
-        if self.attack_cd>0:
+        if self.attack_cd_counter>0:
             return
         if self.reke_power<=0:
             return
         self.reke_power-=1
-        self.attack_cd=0.5
+        self.attack_cd_counter=self.attack_cd #ms
     def handle_moving(self,x,y): 
         if x<0:
             self.body.direction=-1
@@ -97,6 +104,17 @@ class MainActor:
         draw_text(t2,(0,60))
         t3=f"第{padding(level_count)}关"
         draw_text(t3,(400,0))
+
+        draw_health_bar(self.attack_cd_counter,self.attack_cd,(screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
+
+        if self.tip_text_timer>0:
+            draw_text(self.tip_text,(0,screen_height-30))
+        if assets.debug:
+            left=self.actor.x-self.actor.width/2
+            top=self.actor.y-self.actor.height/2
+            main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))  
+
+            screen.draw.rect(main_actor_rect, "red")
         
         
     def tick(self):
@@ -106,8 +124,13 @@ class MainActor:
             self.cry_value-=0.5
         else:
             self.actor._surf=self.dz_normal
-        if self.attack_cd>0:
-            self.attack_cd-=elapsed_time_frame
+        if self.attack_cd_counter>0:
+            self.attack_cd_counter-=elapsed_time_frame
+        elif self.attack_cd_counter<0:
+            self.attack_cd_counter=0
+        
+        if self.tip_text_timer>0:
+            self.tip_text_timer-=elapsed_time_frame
 
 class Body:
     def __init__(self):
@@ -154,7 +177,7 @@ class Scene:
         self.width=width
         self.height=height
         self.mainActor=mainActor
-        tips=TextActor("向右移动以开始>>>", 30, color="red")
+        tips=TextActor("向右移动以开始>>>\n按下[F]使用锐克攻击\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
         tips.pos=(width/2,height/2)
         self.doors=[] #门 
         self.elements=[tips] #场景静态元素
@@ -189,6 +212,14 @@ class Scene:
         x=random.uniform(x_offset+margin,x_offset+self.width-margin)
         y = random.uniform(margin, self.height - margin)
         return (x,y)
+    def get_random_point_environment(self,margin=200,updown=False): 
+        x_offset=self.deltaXCount+self.width
+        x=random.uniform(x_offset,x_offset+self.width)
+        if updown:
+            y = random.uniform(0,margin)
+        else:
+            y = random.uniform(self.height-margin,self.height)
+        return (x,y)
     def generate_level(self):
         global level_count
         level_count+=1
@@ -215,8 +246,9 @@ class Scene:
 
         for i in range(10):
             environment=RandomEnvironment()
-            environment.pos=self.get_random_point()
+            environment.pos=self.get_random_point_environment(updown=i<5)
             self.elements.append(environment)
+        
 
         cat_ememy=GifActor("cat",(100,100))
         cat_ememy.pos=(x_offset+self.width*2/3,self.height/2)
@@ -225,16 +257,16 @@ class Scene:
 
     def draw(self): 
         self.background.draw()
+        for element in self.elements:
+            element.draw()
+        for tool in self.tools:
+            tool.draw()
         for element in self.doors:
             element.draw()
             element.attr.draw()
         for actor in self.actors:
             actor.draw()
             actor.attr.draw()
-        for element in self.elements:
-            element.draw()
-        for tool in self.tools:
-            tool.draw()
 
 
 
@@ -285,7 +317,17 @@ class SpeedIncreaseDoor(Door): #增加速度
         
         mainActor.moving_speed+=1
 
-doors=[HealthIncreaseDoor, SpeedIncreaseDoor]
+class RecoverRekePowerDoor(Door): #增加锐克电量
+    def __init__(self,bind:Actor):
+        super().__init__(bind)
+        self.tips="恢复锐克电量"
+    def on_enter(self,mainActor:MainActor):
+        if self.isUsed:
+            return
+        super().on_enter(mainActor)
+        mainActor.reke_power=mainActor.reke_max_power
+        
+doors=[HealthIncreaseDoor, SpeedIncreaseDoor,RecoverRekePowerDoor]
 def get_random_door(): #随机生成一个门
     return random.choice(doors)
 
@@ -321,6 +363,11 @@ class EnemyData:
             fontsize=20,
             fontname='ys', )
         draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-30),(100,10),x_center_flag=True) #绘制血条
+        if assets.debug:
+            left=self.actor.x-self.actor.width/2
+            top=self.actor.y-self.actor.height/2
+            main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))
+            screen.draw.rect(main_actor_rect, "red")
 
 
 
@@ -328,6 +375,7 @@ class CatEnemy(EnemyData):
     def __init__(self,bind:Actor,mainActor:MainActor,door:Door,x_range_lim):
         super().__init__(bind,mainActor,door,x_range_lim)
         self.tips="耄耋"
+        scale_without_img(self.actor,0.6)
     def tick(self):
         super().tick()
         if self.cd>0:
@@ -340,7 +388,7 @@ class CatEnemy(EnemyData):
 class Tool(Actor):
     def __init__(self,image):
         super().__init__(image)
-        scale(self,100,100)
+        scale(self,50,50)
         self.tips="default"
         self.isUsed=False
     @override
@@ -348,7 +396,7 @@ class Tool(Actor):
         if self.isUsed:
             return
         super().draw()
-        draw_text_center(self.tips,vector_y_offset(self.pos,50))
+        draw_text_center(self.tips,vector_y_offset(self.pos,40))
     def invoke(self,mainActor:MainActor):
         if self.isUsed:
             return
@@ -365,6 +413,8 @@ class Nicotine(Tool):
     @override
     def onUse(self,mainActor:MainActor):
         mainActor.reke_version+=1
+        mainActor.set_tip_text("你的锐克升级了！")
+
 
 class Battery(Tool):
     def __init__(self):
