@@ -8,12 +8,21 @@ from pgzero.rect import Rect,ZRect
 import random
 from assets import *
 import assets
+import mapping
 
 screen : pgzero.screen.Screen
 
 text_color=(0, 25, 184)
 
 placeholder_image=pygame.Surface((1,1))
+
+class EnhancedActor(Actor):
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args,**kwargs)
+        self.visible=True
+    def draw(self):
+        if self.visible:
+            super().draw()
 
 class EmptyActor(Actor):
     def __init__(self, **kwargs):
@@ -123,12 +132,12 @@ def padding(text,length:int=4):
     text=str(text)
     return text.ljust(length)
 
-def draw_text(text,position):
+def draw_text(text,position,color=text_color):
     screen.draw.text(text,
         position,
         fontsize=20,
         fontname='ys', 
-        color=text_color)
+        color=color)
 
 def draw_text_center(text,position):
     screen.draw.text(text,
@@ -152,7 +161,7 @@ def draw_health_bar(value:int,max_health:int,position:Tuple[int,int],size:Tuple[
     inner_height=size[1]-2*margin
     ratio=value/max_health
     screen.draw.filled_rect(Rect((position[0]+margin,position[1]+margin),(inner_width*ratio,inner_height)),ratio_to_color(ratio))
-    draw_text_center(f"{tips} {value}/{max_health}",(position[0]+size[0]/2,position[1]+size[1]/2))
+    draw_text_center(f"{tips} {value:.0f}/{max_health}",(position[0]+size[0]/2,position[1]+size[1]/2))
 
 def normalize(x,y,thershold=5): #归一化向量
     length=math.sqrt(x*x+y*y)
@@ -228,15 +237,63 @@ class DiffuseEffect(Effect):
     def on_finish(self):
         self.target._surf=placeholder_image
 
-class SmokeAttack(Actor):
-    def __init__(self,direction,pos):
+class RepelEffect(Effect):
+    def __init__(self,target,direction,strength=300):
+        super().__init__(target,500)
+        self.direction=direction
+        self.strength=strength
+    def invoke(self):
+        self.target.x+=self.direction[0]*self.strength*assets.elapsed_time_frame/1000
+        self.target.y+=self.direction[1]*self.strength*assets.elapsed_time_frame/1000
+
+class ExplosionEffect(Effect):
+    def __init__(self,target,time=500,strength=3):
+        super().__init__(target,time)
+        self.strength=strength
+    def invoke(self):
+        ratio=1+self.strength*assets.elapsed_time_frame/1000
+        scale_center(self.target,self.target.width*ratio,self.target.height*ratio)
+    def on_finish(self):
+        self.target._surf=placeholder_image
+        self.target.visible=False
+
+class Attack(EnhancedActor):
+    def __init__(self,img):
+        super().__init__(img)
+        self.attacked=[]
+    def try_attack(self,enemy):
+        if not self.visible:
+            return 
+        actor=enemy
+        if not isinstance(actor,Actor):
+            actor=enemy.actor
+        if enemy in self.attacked:
+            return
+        if self.colliderect(actor):
+            self.attacked.append(enemy)
+            self.attack(enemy)
+    def attack(self,enemy):
+        pass
+
+class SmokeAttack(Attack):
+    def __init__(self,direction,pos,reke_version):
         super().__init__("smoke")
         self.pos=pos
         DiffuseEffect(self,direction)
-        self.attacked=[]
+        self.strength=mapping.reke_version_repel_strength(reke_version)
+        self.damage=mapping.reke_version_damage(reke_version)
     def attack(self,enemy):
-        if enemy in self.attacked:
-            return
-        if self.colliderect(enemy):
-            self.attacked.append(enemy)
-            enemy.attr.attacked(50)
+        enemy.attr.attacked(self.damage)
+        # 击退
+        direction=normalize(enemy.x-self.x,enemy.y-self.y,0)
+        RepelEffect(enemy,direction,self.strength)
+
+
+class ExplodeAttack(Attack):
+    def __init__(self,strength,pos):
+        super().__init__("explode")
+        self.strength=strength
+        self.pos=pos
+        ExplosionEffect(self,100,self.strength)
+    def attack(self,enemy):
+        enemy.attacked(50)

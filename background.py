@@ -7,6 +7,7 @@ import random
 import math
 from utils import *
 import assets
+import mapping
 screen : pgzero.screen.Screen
 
 moving_speed=3
@@ -41,13 +42,21 @@ class MainActor:
         self.tip_text=""
         self.tip_text_timer=0
         self.scene=None
+        self.cigarette=Cigarette()
     def set_tip_text(self,text): #设置提示文本
         self.tip_text=text
         self.tip_text_timer=1200
     def set_position(self,position): #设置位置
         self.actor.pos=position
-        self.body.actor.x=position[0]
-        self.body.actor.y=position[1]+60
+        x=position[0]
+        y=position[1]
+        self.body.actor.x=x
+        self.body.actor.y=y+60
+        cig_x=x
+        cig_y=y-6
+        self.cigarette.set_position((cig_x,cig_y))
+    def attacked(self,damage): 
+        self.be_attacked(damage)
     def be_attacked(self,damage):
         self.health-=damage
         self.cry_value=10
@@ -57,21 +66,24 @@ class MainActor:
         if self.attack_cd_counter>0:
             return
         if self.reke_power<=0:
+            self.set_tip_text("锐克电量不足!!!")
             return
         self.reke_power-=1
         self.attack_cd_counter=self.attack_cd #ms
 
-        attack_entity=SmokeAttack(self.direction,self.get_position(),)
+        attack_entity=SmokeAttack(self.direction,self.get_position(),self.reke_version)
         self.scene.self_misiles.append(attack_entity)
     def handle_moving(self,x,y): 
         if x<0:
             self.body.direction=-1
             self.direction=-1
             self.body.state=2
+            self.cigarette.direction=-1
         elif x>0:
             self.body.direction=1
             self.direction=1
             self.body.state=2
+            self.cigarette.direction=1
         else:
             self.body.state=1
         pos_x,pos_y=self.get_position()
@@ -108,14 +120,15 @@ class MainActor:
         draw_health_bar(self.attack_cd_counter,self.attack_cd,(assets.screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
 
         if self.tip_text_timer>0:
-            draw_text(self.tip_text,(0,assets.screen_height-30))
+            draw_text(self.tip_text,(0,assets.screen_height-30),color="red")
         if assets.debug:
             left=self.actor.x-self.actor.width/2
             top=self.actor.y-self.actor.height/2
             main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))  
 
             screen.draw.rect(main_actor_rect, "red")
-        
+        if self.attack_cd_counter>0:
+            self.cigarette.draw()
         
     def tick(self):
         self.body.tick()
@@ -171,9 +184,36 @@ class Body:
     def draw(self):
         self.actor.draw()
 
+class Cigarette:
+    def __init__(self):
+        self.actor_right=get_empty_actor()
+        img_size=(50,50)
+        self.img_size=img_size
+        self.direction=1 #1:right -1:left
+        self.right=load_png_with_scale("cigarette",img_size)
+        self.left=pygame.transform.flip(self.right,True,False)
+        self.actor_right._surf=self.right
+        scale(self.actor_right,*img_size)
+        self.actor_right.anchor=(-5,0)
+        self.actor_left=get_empty_actor()
+        self.actor_left._surf=self.left
+        scale(self.actor_left,*img_size)
+        self.actor_left.anchor=(img_size[1]+5,0)
+        self.visible=True
+    def set_position(self,position): #设置位置
+        self.actor_right.pos=position
+        self.actor_left.pos=position
+    def draw(self):
+        if not self.visible:
+            return
+        if self.direction==1:
+            self.actor_right.draw()
+        else:
+            self.actor_left.draw()
 
 class Scene:
     def __init__(self,width,height,mainActor):
+        global sceneInstance
         self.width=width
         self.height=height
         self.mainActor=mainActor
@@ -189,7 +229,7 @@ class Scene:
         self.background=rectangle_actor(width,height,(255,255,255))
         self.deltaXCount=0
         self.generate_level()
-        
+        sceneInstance=self
     def delta_x(self,delta): 
         self.deltaXCount+=-delta
         for list in self.lists:
@@ -257,6 +297,9 @@ class Scene:
                 environment.pos=self.get_random_point_environment(updown=i<5)
                 self.elements.append(environment)
         
+        explosiveCat=ExplosiveCatEnemy.create(self.mainActor,door1,self.width)
+        explosiveCat.pos=self.get_random_point()
+        self.actors.append(explosiveCat)
 
         for i in range(max(1,math.floor(math.log(level_count,2)))):
             cat_ememy=GifActor("cat",(100,100))
@@ -281,7 +324,7 @@ class Scene:
         for misile in self.enemy_misiles:
             misile.draw()
 
-
+sceneInstance:Scene
 
 class Door:
     def __init__(self,bind:Actor,other=None):
@@ -410,6 +453,31 @@ class CatEnemy(EnemyData):
             self.mainActor.be_attacked(10)
             self.cd=200
             
+class ExplosiveCatEnemy(EnemyData):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
+        super().__init__(bind,mainActor,door,x_range_lim)
+        self.tips="爆炸耄耋"
+        scale_without_img(self.actor,0.8) 
+        self.max_health=50
+        self.health=50
+        self.moving_speed=1
+    def tick(self):
+        super().tick()
+        if not self.actor.visible:
+            return
+        if self.cd>0:
+            return
+        if self.actor.colliderect(self.mainActor.actor):
+            self.attacked(self.max_health)
+            entity=ExplodeAttack(3,self.actor.pos)
+            sceneInstance.enemy_misiles.append(entity)
+    @staticmethod
+    def create(mainActor:MainActor,door:Door,x_range_lim):
+        bind=EnhancedActor("cat-3")
+        scale(bind,100,100)
+        attr= ExplosiveCatEnemy(bind,mainActor,door,x_range_lim)
+        bind.attr=attr
+        return bind
 
 class Tool(Actor):
     def __init__(self,image):

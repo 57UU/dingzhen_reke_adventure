@@ -73,7 +73,13 @@ def update():
         element.invoke(mainActor)
     for attack in scene.self_misiles:
         for enemy in scene.actors:
-            attack.attack(enemy)
+            if not enemy.visible:
+                continue
+            attack.try_attack(enemy)
+    for attack in scene.enemy_misiles:
+        if not attack.visible:
+                continue
+        attack.try_attack(mainActor)
     clock.tick(60)
 
 
