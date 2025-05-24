@@ -145,7 +145,7 @@ class Body:
         self.timer=0
         self.standleft=load_png_with_scale("animation/standleft",size)
         self.standright=load_png_with_scale("animation/standright",size)
-        self.actor=Actor("placeholder")
+        self.actor=get_empty_actor()
         scale(self.actor,*size)
         self.actor._surf=self.standright
         self.direction=1 #1:right -1:left
@@ -183,8 +183,10 @@ class Scene:
         self.elements=[tips] #场景静态元素
         self.actors=[] #场景动态元素
         self.tools=[] #道具
-        self.lists=[self.doors,self.elements,self.actors,self.tools]
-        self.background=empty_actor(width,height,(255,255,255))
+        self.self_misiles=[] #自身子弹
+        self.enemy_misiles=[] #敌人子弹
+        self.lists=[self.doors,self.elements,self.actors,self.tools,self.self_misiles,self.enemy_misiles]
+        self.background=rectangle_actor(width,height,(255,255,255))
         self.deltaXCount=0
         self.generate_level()
         
@@ -224,10 +226,10 @@ class Scene:
         global level_count
         level_count+=1
         x_offset=self.deltaXCount+self.width
-        door1=empty_actor(10,self.height/2,(255,255,0))
+        door1=rectangle_actor(10,self.height/2,(255,255,0))
         door1.pos=(x_offset,self.height/4)
         self.doors.append(door1)
-        door2=empty_actor(10,self.height/2,(255,0,255))
+        door2=rectangle_actor(10,self.height/2,(255,0,255))
         door2.pos=(x_offset,self.height*3/4)
         self.doors.append(door2)
         door1.attr=get_random_door()(door1)
@@ -243,17 +245,20 @@ class Scene:
             nicotine=Nicotine()
             nicotine.pos=self.get_random_point()
             self.tools.append(nicotine)
-
-        for i in range(10):
-            environment=RandomEnvironment()
-            environment.pos=self.get_random_point_environment(updown=i<5)
-            self.elements.append(environment)
+        if level_count%10==0:
+            pass #boss
+        else:
+            for i in range(10):
+                environment=RandomEnvironment()
+                environment.pos=self.get_random_point_environment(updown=i<5)
+                self.elements.append(environment)
         
 
-        cat_ememy=GifActor("cat",(100,100))
-        cat_ememy.pos=(x_offset+self.width*2/3,self.height/2)
-        cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
-        self.actors.append(cat_ememy)
+        for i in range(max(1,math.floor(math.log(level_count,2)))):
+            cat_ememy=GifActor("cat",(100,100))
+            cat_ememy.pos=self.get_random_point()
+            cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
+            self.actors.append(cat_ememy)
 
     def draw(self): 
         self.background.draw()
@@ -267,6 +272,10 @@ class Scene:
         for actor in self.actors:
             actor.draw()
             actor.attr.draw()
+        for misile in self.self_misiles:
+            misile.draw()
+        for misile in self.enemy_misiles:
+            misile.draw()
 
 
 
@@ -332,7 +341,7 @@ def get_random_door(): #随机生成一个门
     return random.choice(doors)
 
 class EnemyData: 
-    def __init__(self,bind:Actor,mainActor:MainActor,door:Door,x_range_lim):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
         self.actor=bind
         self.mainActor=mainActor
         self.tips="default"
@@ -372,14 +381,18 @@ class EnemyData:
 
 
 class CatEnemy(EnemyData): 
-    def __init__(self,bind:Actor,mainActor:MainActor,door:Door,x_range_lim):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
         super().__init__(bind,mainActor,door,x_range_lim)
-        self.tips="耄耋"
+        self.tips="普通耄耋"
         scale_without_img(self.actor,0.6)
+        
     def tick(self):
         super().tick()
         if self.cd>0:
+            self.actor.range=(0,4)
             return
+        else:
+            self.actor.range=(3,7)
         if self.actor.colliderect(self.mainActor.actor):
             self.mainActor.be_attacked(10)
             self.cd=200

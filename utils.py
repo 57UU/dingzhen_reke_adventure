@@ -3,12 +3,24 @@ import os
 import pgzero
 from pgzero.actor import Actor
 import math
-from pgzero.rect import Rect
+from pgzero.rect import Rect,ZRect
 import random
 
 screen : pgzero.screen.Screen
 
 text_color=(0, 25, 184)
+
+placeholder_image=pygame.Surface((1,1))
+
+class EmptyActor(Actor):
+    def __init__(self, **kwargs):
+        self._handle_unexpected_kwargs(kwargs)
+        self.__dict__["_rect"] = ZRect((0, 0), (0, 0))
+        self._orig_surf=self._surf=placeholder_image
+        # self._init_position(pos, anchor, **kwargs)
+
+def get_empty_actor():
+    return EmptyActor()
 
 def scale(actor, new_width, new_height):
     actor._surf=pygame.transform.scale(actor._surf, (new_width, new_height))
@@ -27,8 +39,8 @@ def load_png_with_scale(filename,size):
     img=pygame.transform.scale(img, size)
     return img
 
-def empty_actor(width,height,color=(255,255,255)):
-    actor = Actor("placeholder")  
+def rectangle_actor(width,height,color=(255,255,255)):
+    actor = get_empty_actor()
     actor.anchor=(width/2,height/2)
     actor._surf = pygame.Surface((width, height)) 
     actor._surf.fill(color)
@@ -36,7 +48,10 @@ def empty_actor(width,height,color=(255,255,255)):
     actor.height=height
     return actor
 from typing import List,Tuple, override
+cache={}
 def get_images_from_folder(folder_path)->List[pygame.Surface]:
+    if folder_path in cache:
+        return cache[folder_path]
     images = []
     folder_path =f"images/{folder_path}"
     for filename in os.listdir(folder_path):
@@ -44,14 +59,13 @@ def get_images_from_folder(folder_path)->List[pygame.Surface]:
             image_path = os.path.join(folder_path, filename)
             image = pygame.image.load(image_path)
             images.append(image)
+    cache[folder_path]=images
     return images
 
-import imageio
-from PIL import Image
 gif_actors=[]
-class GifActor(Actor):
+class GifActor(EmptyActor):
     def __init__(self, gif_path,size:Tuple[int,int]=None):
-        super().__init__("placeholder")
+        super().__init__()
         self.frames = []
         self.current_frame = 0
         self.animation_speed = 0.1
@@ -67,6 +81,7 @@ class GifActor(Actor):
         self.width = self._surf.get_width()
         self.height = self._surf.get_height()
         self.anchor = (self.width/2, self.height/2)
+        self.range=(0,len(self.frames))
 
         if size is not None:
             scale(self,size[0],size[1])
@@ -79,7 +94,9 @@ class GifActor(Actor):
         self.time_since_last_frame += dt
         if self.time_since_last_frame >= self.animation_speed:
             self.time_since_last_frame = 0
-            self.current_frame = (self.current_frame + 1) % len(self.frames)
+            self.current_frame +=1
+            if self.current_frame>=self.range[1]:
+                self.current_frame=self.range[0]
             self._surf = self.frames[self.current_frame]
             
     def draw(self):
@@ -126,9 +143,9 @@ def normalize(x,y,thershold=5): #归一化向量
         return (0,0)
     return (x/length,y/length)
 
-class TextActor(Actor):
+class TextActor(EmptyActor):
     def __init__(self, text,fontsize,**kwargs):
-        super().__init__("placeholder")
+        super().__init__()
         self.text = text
         self.fontsize = fontsize
         self.color = kwargs.get("color", "white")
@@ -157,8 +174,8 @@ def vector_y_offset(vector,offset):
 
 environments=get_images_from_folder("env")
 
-class RandomEnvironment(Actor):
+class RandomEnvironment(EmptyActor):
     def __init__(self,size:Tuple[int,int]=(100,100)):
-        super().__init__("placeholder")
+        super().__init__()
         self._surf=random.choice(environments)
         scale(self,*size)
