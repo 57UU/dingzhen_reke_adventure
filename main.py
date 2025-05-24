@@ -49,6 +49,8 @@ def update():
         a.update(clock.get_time()/1000)
     for effect in effects:
         effect.tick()
+    for cd in cd_counter_list:
+        cd.tick()
     mainActor.tick()
     if mainActor.isLosed:
         loseActor.visible=True

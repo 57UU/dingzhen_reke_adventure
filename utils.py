@@ -321,10 +321,50 @@ class CigaretteAttack(Attack):
         direction=(math.cos(angle),math.sin(angle))
         scale_ratio(self,0.5)
         self.angle=-mapping.rad_to_deg(angle)
-        
+        self.strength=mapping.reke_version_repel_strength(reke_version)*2
         self.pos=pos
         self.damage=mapping.reke_version_cigarette_damage(reke_version)
         RepelEffect(self,direction,500,isVanish=True)
     @override
     def attack(self,enemy):
         enemy.attr.attacked(self.damage)
+        direction=normalize(enemy.x-self.x,enemy.y-self.y,0)
+        RepelEffect(enemy,direction,self.strength)
+    
+transparent_gray = (100, 100,100, 128)
+cd_counter_list=[]
+x_offset=-1
+y_offset=35
+class CDableAttackUI:
+    def __init__(self,img,cd_time,tip_message="default"):
+        global x_offset
+        if x_offset==-1:
+            x_offset=assets.screen_width-310
+        self.size_x=60
+        self.top_x=x_offset
+        x_offset+=self.size_x+20
+        scale(img,self.size_x,self.size_x)
+        img.anchor=(0,0)
+        img.pos=(self.top_x,y_offset)
+        self.img=img
+        self.cd_time=cd_time
+        self.cd=0
+        cd_counter_list.append(self)
+        self.tip_message=tip_message
+    def can_use(self):
+        return self.cd<=0
+    def use(self):
+        self.cd=self.cd_time
+    def tick(self):
+        if self.cd>0:
+            self.cd-=assets.elapsed_time_frame
+        else:
+            self.cd=0
+    def draw(self):
+        ratio=self.cd/self.cd_time
+        cd_height=self.size_x*ratio
+        self.img.draw()
+        if cd_height>0:
+            screen.draw.filled_rect(Rect(self.top_x,y_offset+self.size_x-cd_height,self.size_x,cd_height),color=transparent_gray)
+        screen.draw.rect(Rect(self.top_x,y_offset,self.size_x,self.size_x),color="black")
+        draw_text_center(self.tip_message,(self.top_x+self.size_x/2,y_offset+self.size_x+15),"black")

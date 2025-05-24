@@ -22,7 +22,7 @@ class MainActor:
         self.health=100 #生命值
         self.max_health=100 #最大生命值
         self.score=0 #分数
-        self.moving_speed=3
+        self.moving_speed=3.0
         self.inventory=[] #背包
         self.actor=Actor("dz")
         img_size=(100,100)
@@ -32,14 +32,16 @@ class MainActor:
         self.actor.pos=(200,assets.screen_height/2)
         self.reke_version=1
         self.reke_max_power=5
-        self.reke_power=5
+        self.reke_power:int=5
         self.dz_normal=load_png_with_scale("dz",img_size)
         self.dz_cry=load_png_with_scale("dz-cry",img_size)
         self.cry_value=0
         self.body=Body()
         self.direction=1 #1:right -1:left
         self.attack_cd_counter=0
-        self.attack_cd=400 #ms
+        self.attack_cd=600 #ms
+        self.normal_attack_ui=CDableAttackUI(EnhancedActor("cigarette"),self.attack_cd,"[F]烟圈")
+        self.big_reke_ui=CDableAttackUI(EnhancedActor("explode-reke"),self.attack_cd*5,"[R]锐克")
         self.tip_text=""
         self.tip_text_timer=0
         self.scene:Scene
@@ -66,13 +68,14 @@ class MainActor:
     def get_position(self): #获取位置
         return self.actor.pos
     def attack(self): #攻击
-        if self.attack_cd_counter>0:
+        if not self.normal_attack_ui.can_use():
+            self.set_tip_text("攻击冷却中!!!")
             return
         if self.reke_power<=0:
             self.set_tip_text("锐克电量不足!!!")
             return
         self.reke_power-=1
-        self.attack_cd_counter=self.attack_cd #ms
+        self.normal_attack_ui.use()
 
         attack_entity=SmokeAttack(self.direction,self.get_position(),self.reke_version)
         self.scene.self_misiles.append(attack_entity)
@@ -80,6 +83,10 @@ class MainActor:
         if self.reke_power<3:
             self.set_tip_text("锐克电量不足!!! 大招需要3格电量")
             return
+        if not self.big_reke_ui.can_use():
+            self.set_tip_text("攻击冷却中!!!")
+            return
+        self.big_reke_ui.use()
         angle=0
         self.reke_power-=3
         for i in range(8):
@@ -125,12 +132,14 @@ class MainActor:
         draw_health_bar(self.reke_power,self.reke_max_power,(assets.screen_width-310,0),bar_zise,tips="锐克电量")
         text=f"速度：{padding(self.moving_speed)}"
         draw_text(text,(0,40))
-        t2=f"武器：锐克{self.reke_version}代 使用[F]攻击"
+        t2=f"武器：锐克{self.reke_version}代"
         draw_text(t2,(0,60))
         t3=f"第{padding(level_count)}关"
         draw_text(t3,(400,0))
 
-        draw_health_bar(self.attack_cd_counter,self.attack_cd,(assets.screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
+        # draw_health_bar(self.attack_cd_counter,self.attack_cd,(assets.screen_width-310,35),vector_y_offset(bar_zise,-10),tips="攻击冷却")
+        self.normal_attack_ui.draw()
+        self.big_reke_ui.draw()
 
         if self.tip_text_timer>0:
             draw_text(self.tip_text,(0,assets.screen_height-30),color="red")
@@ -145,15 +154,15 @@ class MainActor:
         
     def tick(self):
         self.body.tick()
-        if self.cry_value>0:
+        if self.cry_value>0 or self.isLosed:
             self.actor._surf=self.dz_cry
             self.cry_value-=0.5
         else:
             self.actor._surf=self.dz_normal
-        if self.attack_cd_counter>0:
-            self.attack_cd_counter-=assets.elapsed_time_frame
-        elif self.attack_cd_counter<0:
-            self.attack_cd_counter=0
+        # if self.attack_cd_counter>0:
+        #     self.attack_cd_counter-=assets.elapsed_time_frame
+        # elif self.attack_cd_counter<0:
+        #     self.attack_cd_counter=0
         
         if self.tip_text_timer>0:
             self.tip_text_timer-=assets.elapsed_time_frame
@@ -367,13 +376,11 @@ class Door:
 class HealthIncreaseDoor(Door): #增加生命值
     def __init__(self,bind:Actor):
         super().__init__(bind)
-        self.health=100
         self.tips="恢复生命值"
     def on_enter(self,mainActor:MainActor):
         if self.isUsed:
             return
         super().on_enter(mainActor)
-        
         mainActor.health=mainActor.max_health
 
 class SpeedIncreaseDoor(Door): #增加速度
@@ -384,8 +391,7 @@ class SpeedIncreaseDoor(Door): #增加速度
         if self.isUsed:
             return
         super().on_enter(mainActor)
-        
-        mainActor.moving_speed+=1
+        mainActor.moving_speed+=0.6
 
 class RecoverRekePowerDoor(Door): #增加锐克电量
     def __init__(self,bind:Actor):
@@ -395,9 +401,39 @@ class RecoverRekePowerDoor(Door): #增加锐克电量
         if self.isUsed:
             return
         super().on_enter(mainActor)
-        mainActor.reke_power=mainActor.reke_max_power
-        
-doors=[HealthIncreaseDoor, SpeedIncreaseDoor,RecoverRekePowerDoor]
+        mainActor.reke_power=min(mainActor.reke_max_power,mainActor.reke_power+2)
+
+class MaxHealthIncreaseDoor(Door):
+    def __init__(self,bind:Actor):
+        super().__init__(bind)
+        self.tips="增加最大生命值"
+    def on_enter(self,mainActor:MainActor):
+        if self.isUsed:
+            return
+        super().on_enter(mainActor)
+        mainActor.max_health+=15
+        mainActor.health=(mainActor.max_health+mainActor.health)/2
+        mainActor.set_tip_text("最大生命值增加15")
+
+class MaxRekePowerIncreaseDoor(Door): #增加速度
+    def __init__(self,bind:Actor):
+        super().__init__(bind)
+        self.tips="增加锐克最大电量"
+    def on_enter(self,mainActor:MainActor):
+        if self.isUsed:
+            return
+        super().on_enter(mainActor)
+        mainActor.reke_max_power+=1
+        mainActor.reke_power=math.floor((mainActor.reke_max_power+mainActor.reke_power)/2)
+        mainActor.set_tip_text("锐克最大电量增加")
+
+doors=[
+    HealthIncreaseDoor, 
+    SpeedIncreaseDoor,
+    RecoverRekePowerDoor,
+    MaxHealthIncreaseDoor,
+    MaxRekePowerIncreaseDoor
+    ]
 def get_random_door(): #随机生成一个门
     return random.choice(doors)
 
@@ -439,7 +475,7 @@ class EnemyData:
                 color="black",
                 fontsize=20,
                 fontname='ys', )
-            draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-30),(100,10),x_center_flag=True) #绘制血条
+            draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-35),(100,10),x_center_flag=True) #绘制血条
             if assets.debug:
                 left=self.actor.x-self.actor.width/2
                 top=self.actor.y-self.actor.height/2
