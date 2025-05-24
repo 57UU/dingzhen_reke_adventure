@@ -40,6 +40,7 @@ class MainActor:
         self.attack_cd=400 #ms
         self.tip_text=""
         self.tip_text_timer=0
+        self.scene=None
     def set_tip_text(self,text): #设置提示文本
         self.tip_text=text
         self.tip_text_timer=1200
@@ -59,6 +60,9 @@ class MainActor:
             return
         self.reke_power-=1
         self.attack_cd_counter=self.attack_cd #ms
+
+        attack_entity=SmokeAttack(self.direction,self.get_position(),)
+        self.scene.self_misiles.append(attack_entity)
     def handle_moving(self,x,y): 
         if x<0:
             self.body.direction=-1
@@ -351,7 +355,13 @@ class EnemyData:
         self.door=door
         self.x_range_lim=x_range_lim
         self.cd=0 #milliseconds
+    def attacked(self,damage): #被攻击
+        self.health-=damage
+        if self.health<=0:
+            self.actor.visible=False
     def tick(self):
+        if not self.actor.visible:
+            return
         if self.cd>0:
             self.cd-=assets.elapsed_time_frame
             return
@@ -365,18 +375,19 @@ class EnemyData:
         self.actor.x=max(left_lim,self.actor.x)
         self.actor.x=min(right_lim,self.actor.x)
     def draw(self):
-        screen.draw.text(
-            self.tips, 
-            center=vector_y_offset(self.actor.pos,-45),
-            color="black",
-            fontsize=20,
-            fontname='ys', )
-        draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-30),(100,10),x_center_flag=True) #绘制血条
-        if assets.debug:
-            left=self.actor.x-self.actor.width/2
-            top=self.actor.y-self.actor.height/2
-            main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))
-            screen.draw.rect(main_actor_rect, "red")
+        if self.actor.visible:
+            screen.draw.text(
+                self.tips, 
+                center=vector_y_offset(self.actor.pos,-45),
+                color="black",
+                fontsize=20,
+                fontname='ys', )
+            draw_health_bar(self.health,self.max_health,vector_y_offset(self.actor.pos,-30),(100,10),x_center_flag=True) #绘制血条
+            if assets.debug:
+                left=self.actor.x-self.actor.width/2
+                top=self.actor.y-self.actor.height/2
+                main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))
+                screen.draw.rect(main_actor_rect, "red")
 
 
 
@@ -388,6 +399,8 @@ class CatEnemy(EnemyData):
         
     def tick(self):
         super().tick()
+        if not self.actor.visible:
+            return
         if self.cd>0:
             self.actor.range=(0,4)
             return

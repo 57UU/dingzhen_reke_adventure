@@ -1,3 +1,4 @@
+from typing_extensions import ParamSpecArgs
 import pygame
 import os
 import pgzero
@@ -6,6 +7,7 @@ import math
 from pgzero.rect import Rect,ZRect
 import random
 from assets import *
+import assets
 
 screen : pgzero.screen.Screen
 
@@ -28,6 +30,16 @@ def scale(actor, new_width, new_height):
     actor.anchor=(new_width/2,new_height/2)
     actor.width=new_width
     actor.height=new_height
+
+def scale_center(actor,new_width,new_height):
+    old_width=actor.width
+    old_height=actor.height
+    actor._surf=pygame.transform.scale(actor._surf, (new_width, new_height))
+    actor.width=new_width
+    actor.height=new_height
+    actor.x-=(new_width-old_width)/2
+    actor.y-=(new_height-old_height)/2
+    actor.anchor=(actor.width/2,actor.height/2)
 
 def scale_without_img(actor,ratio):
 
@@ -71,6 +83,7 @@ class GifActor(EmptyActor):
         self.current_frame = 0
         self.animation_speed = 0.1
         self.time_since_last_frame = 0
+        self.visible=True
         gif_actors.append(self)
         
         self.frames=get_images_from_folder(gif_path)
@@ -92,13 +105,16 @@ class GifActor(EmptyActor):
             self.frames=tmp
     
     def update(self, dt):
-        self.time_since_last_frame += dt
-        if self.time_since_last_frame >= self.animation_speed:
-            self.time_since_last_frame = 0
-            self.current_frame +=1
-            if self.current_frame>=self.range[1]:
-                self.current_frame=self.range[0]
-            self._surf = self.frames[self.current_frame]
+        if self.visible:
+            self.time_since_last_frame += dt
+            if self.time_since_last_frame >= self.animation_speed:
+                self.time_since_last_frame = 0
+                self.current_frame +=1
+                if self.current_frame>=self.range[1]:
+                    self.current_frame=self.range[0]
+                self._surf = self.frames[self.current_frame]
+        else:
+            self._surf = placeholder_image
             
     def draw(self):
         super().draw()
@@ -189,4 +205,38 @@ class Effect():
         self.time=time
         effects.append(self)
     def tick(self):
+        if self.time>0:
+            self.invoke()
+            self.time-=assets.elapsed_time_frame
+        else:
+            self.on_finish()
+            effects.remove(self)
+    def invoke(self):
         pass
+    def on_finish(self):
+        pass
+
+class DiffuseEffect(Effect):
+    def __init__(self,target,direction):
+        super().__init__(target,500)
+        self.direction=direction
+    def invoke(self):
+        ratio=1+2*assets.elapsed_time_frame/1000
+        scale_center(self.target,self.target.width*ratio,self.target.height*ratio)
+        x_delta=self.direction*300*assets.elapsed_time_frame/1000
+        self.target.x+=x_delta
+    def on_finish(self):
+        self.target._surf=placeholder_image
+
+class SmokeAttack(Actor):
+    def __init__(self,direction,pos):
+        super().__init__("smoke")
+        self.pos=pos
+        DiffuseEffect(self,direction)
+        self.attacked=[]
+    def attack(self,enemy):
+        if enemy in self.attacked:
+            return
+        if self.colliderect(enemy):
+            self.attacked.append(enemy)
+            enemy.attr.attacked(50)

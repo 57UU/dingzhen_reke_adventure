@@ -26,6 +26,7 @@ keys_pressed=set()
 
 mainActor=MainActor()
 scene = Scene(WIDTH,HEIGHT,mainActor)
+mainActor.scene=scene
 
 
 def draw():
@@ -43,6 +44,8 @@ def update():
     scene.tick()
     for a in gif_actors:
         a.update(clock.get_time()/1000)
+    for effect in effects:
+        effect.tick()
     mainActor.tick()
     moving=[0,0]
     if keys.RIGHT in keys_pressed:
@@ -68,6 +71,9 @@ def update():
             element.attr.on_enter(mainActor)
     for element in scene.tools:
         element.invoke(mainActor)
+    for attack in scene.self_misiles:
+        for enemy in scene.actors:
+            attack.attack(enemy)
     clock.tick(60)
 
 
