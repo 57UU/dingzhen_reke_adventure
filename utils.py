@@ -217,13 +217,15 @@ class RandomEnvironment(EmptyActor):
         self._surf=random.choice(environments)
         scale(self,*size)
 
-effects=[]
+import typing
 
 class Effect():
     def __init__(self,target,time):
         self.target=target
         self.time=time
         effects.append(self)
+        self.isShowUI=False
+        self.tips="default"
         self.attach_on_finish_functions=[]
     def tick(self):
         if self.time>0:
@@ -239,6 +241,10 @@ class Effect():
         pass
     def on_finish(self):
         pass
+    def get_str(self):
+        return f"{self.tips} {self.time/1000:.1f}s"
+
+effects:typing.List[Effect]=[]
 
 class DiffuseEffect(Effect):
     def __init__(self,target,direction):
@@ -276,6 +282,16 @@ class ExplosionEffect(Effect):
     def on_finish(self):
         self.target._surf=placeholder_image
         self.target.visible=False
+
+class SlowRecoverEffect(Effect):
+    def __init__(self,target,time=5*1000,strength=5):
+        super().__init__(target,time)
+        self.strength=strength
+        self.isShowUI=True
+        self.tips="缓慢恢复生命"
+    def invoke(self):
+        delta=self.strength*assets.elapsed_time_frame/1000
+        self.target.health=min(self.target.health+delta,self.target.max_health)
 
 class Attack(EnhancedActor):
     def __init__(self,img):

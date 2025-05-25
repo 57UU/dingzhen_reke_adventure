@@ -35,6 +35,11 @@ loseActor.visible=False
 def draw():
     screen.clear()
     scene.draw()
+    effects_text=""
+    for effect in effects:
+        if effect.isShowUI:
+            effects_text+=effect.get_str()+"\n"
+    draw_text(effects_text,(0,HEIGHT/3))
     mainActor.draw()
     loseActor.draw()
 

@@ -483,12 +483,23 @@ class MaxRekePowerIncreaseDoor(Door): #增加速度
         mainActor.reke_power=math.floor((mainActor.reke_max_power+mainActor.reke_power)/2)
         mainActor.set_tip_text("锐克最大电量增加")
 
+class RecoverRekePowerDoor(Door):
+    def __init__(self,bind:Actor):
+        super().__init__(bind)
+        self.tips="缓慢回血"
+    def on_enter(self,mainActor:MainActor):
+        if self.isUsed:
+            return
+        super().on_enter(mainActor)
+        SlowRecoverEffect(mainActor,)
+
 doors=[
     HealthIncreaseDoor, 
     SpeedIncreaseDoor,
     RecoverRekePowerDoor,
     MaxHealthIncreaseDoor,
-    MaxRekePowerIncreaseDoor
+    MaxRekePowerIncreaseDoor,
+    RecoverRekePowerDoor
     ]
 def get_random_door(): #随机生成一个门
     return random.choice(doors)
