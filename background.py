@@ -48,6 +48,7 @@ class MainActor:
         self.scene:Scene
         self.cigarette=Cigarette()
         self.smoke=CDableAttackUI(EnhancedActor("placeholder"),self.attack_cd,"invisable")
+        self.chain:EnhancedActor=None
     def set_tip_text(self,text): #设置提示文本
         self.tip_text=text
         self.tip_text_timer=1200
@@ -81,6 +82,7 @@ class MainActor:
         self.smoke.use()
         attack_entity=SmokeAttack(self.direction,self.get_position(),self.reke_version)
         self.scene.self_misiles.append(attack_entity)
+        
     def use_reke_to_health(self): #使用锐克恢复
         if self.reke_power<1:
             self.set_tip_text("锐克电量不足!!! 恢复需要1格电量")
@@ -119,6 +121,9 @@ class MainActor:
             self.cigarette.direction=1
         else:
             self.body.state=1
+        if self.chain!=None and self.chain.visible:
+            if self.actor.colliderect(self.chain) and x>0:
+                x=0
         pos_x,pos_y=self.get_position()
         pos_x+=x*self.moving_speed
         pos_y+=y*self.moving_speed
@@ -128,13 +133,13 @@ class MainActor:
         if pos_x>screen.width:
             pos_x=screen.width
         #constrain pos_y between 0 and screen.height
-        if pos_y<0:
-            pos_y=0
+        if pos_y<2:
+            pos_y=2
         if x_left_door != None and x<0:
             if pos_x<x_left_door.x:
                 pos_x=x_left_door.x
-        if pos_y>screen.height:
-            pos_y=screen.height
+        if pos_y>screen.height-2:
+            pos_y=screen.height-2
         self.set_position((pos_x,pos_y))
             
     def draw(self):
@@ -303,9 +308,16 @@ class Scene:
         else:
             y = random.uniform(self.height-margin,self.height)
         return (x,y)
+    def spawn_battery(self):
+        battery=Battery()
+        battery.pos=self.get_random_point()
+        self.tools.append(battery)
+    def spawn_nicotine(self):
+        nicotine=Nicotine()
+        nicotine.pos=self.get_random_point()
+        self.tools.append(nicotine)
     def generate_level(self):
-        global level_count
-        level_count+=1
+        real_level_count=level_count+1
         x_offset=self.deltaXCount+self.width
         door1=rectangle_actor(10,self.height/2,(255,255,0))
         door1.pos=(x_offset,self.height/4)
@@ -319,31 +331,43 @@ class Scene:
         door2.attr.other=door1.attr
 
         if random.random()<0.5:
-            battery=Battery()
-            battery.pos=self.get_random_point()
-            self.tools.append(battery)
+            self.spawn_battery()
         if random.random()<0.5:
-            nicotine=Nicotine()
-            nicotine.pos=self.get_random_point()
-            self.tools.append(nicotine)
-        if level_count%10==0:
-            pass #boss
+            self.spawn_nicotine()
+        if real_level_count>2 and real_level_count%10==0:
+            #boss
+            chain=EnhancedActor("chain")
+            chain.pos=(x_offset+self.width-50,assets.screen_height/2)
+            self.elements.append(chain)
+            self.mainActor.chain=chain
+
+            cat_ememy=GifActor("cat",(200,200))
+            cat_ememy.pos=self.get_random_point()
+            cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
+            cat_ememy.attr.bind_door=chain 
+            cat_ememy.attr.moving_speed=5.5
+            cat_ememy.attr.max_health=300
+            cat_ememy.attr.health=300
+            self.actors.append(cat_ememy)
+
+            self.spawn_battery()
+            self.spawn_battery()
+
         else:
             for i in range(10):
                 environment=RandomEnvironment()
                 environment.pos=self.get_random_point_environment(updown=i<5)
                 self.elements.append(environment)
+
+            for i in range(mapping.enemy_count_level_index(real_level_count)):
+                cat_ememy=GifActor("cat",(100,100))
+                cat_ememy.pos=self.get_random_point()
+                cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
+                self.actors.append(cat_ememy)
         
         explosiveCat=ExplosiveCatEnemy.create(self.mainActor,door1,self.width)
         explosiveCat.pos=self.get_random_point()
         self.actors.append(explosiveCat)
-
-        for i in range(max(1,math.floor(math.log(level_count,2)))):
-            cat_ememy=GifActor("cat",(100,100))
-            cat_ememy.pos=self.get_random_point()
-            cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
-            self.actors.append(cat_ememy)
-
     def draw(self): 
         self.background.draw()
         for element in self.elements:
@@ -371,6 +395,7 @@ class Door:
         self.color="red"
         self.other=None
     def on_enter(self,mainActor:MainActor):
+        global level_count
         global x_left_door
         if self.isUsed:
             return
@@ -378,6 +403,9 @@ class Door:
             self.other.isUsed=True
         x_left_door=self.actor
         self.isUsed=True
+        self.onUse(mainActor)
+        level_count+=1
+    def onUse(self,mainActor:MainActor):
         pass
     def draw(self):
         screen.draw.text(
@@ -452,7 +480,7 @@ def get_random_door(): #随机生成一个门
     return random.choice(doors)
 
 class EnemyData: 
-    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim,bind_door:EnhancedActor=None):
         self.actor=bind
         self.mainActor=mainActor
         self.tips="default"
@@ -463,10 +491,20 @@ class EnemyData:
         self.x_range_lim=x_range_lim
         self.cd=0 #milliseconds
         self.text_y_offset=-35
+        self.bind_door=bind_door
     def attacked(self,damage): #被攻击
         self.health-=damage
         if self.health<=0:
             self.actor.visible=False
+            if self.bind_door!=None:
+                explode=EnhancedActor("explode")
+                scale(explode,150,150)
+                explode.pos=self.bind_door.pos
+                sceneInstance.elements.append(explode)
+                effect=ExplosionEffect(explode,)
+                effect.attach_on_finish_functions.append(self._make_bind_door_invisible)
+    def _make_bind_door_invisible(self): 
+        self.bind_door.visible=False
     def tick(self):
         if not self.actor.visible:
             return

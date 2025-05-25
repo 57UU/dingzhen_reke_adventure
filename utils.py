@@ -224,17 +224,21 @@ class Effect():
         self.target=target
         self.time=time
         effects.append(self)
+        self.attach_on_finish_functions=[]
     def tick(self):
         if self.time>0:
             self.invoke()
             self.time-=assets.elapsed_time_frame
         else:
             self.on_finish()
+            for func in self.attach_on_finish_functions:
+                func()
             effects.remove(self)
+
     def invoke(self):
         pass
     def on_finish(self):
-        effects.remove(self)
+        pass
 
 class DiffuseEffect(Effect):
     def __init__(self,target,direction):
