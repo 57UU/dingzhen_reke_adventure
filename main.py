@@ -64,8 +64,7 @@ def update():
             moving[1]=-1
         if keys.DOWN in keys_pressed:
             moving[1]=1
-        if keys.K_1 in keys_pressed:
-            mainActor.attack()
+        
         mainActor.handle_moving(*moving)
 
         mainActorPos=mainActor.get_position()
@@ -93,6 +92,8 @@ def update():
 
 def on_key_down(key):
     keys_pressed.add(key)
+    if key==keys.K_1:
+        mainActor.attack()
     if key==keys.K_2:
         mainActor.use_big_reke()
     if key==keys.K_3:

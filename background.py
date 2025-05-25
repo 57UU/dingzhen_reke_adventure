@@ -43,6 +43,7 @@ class MainActor:
         self.normal_attack_ui=CDableAttackUI(EnhancedActor("cigarette-circle"),self.attack_cd,"[1]烟圈")
         self.big_reke_ui=CDableAttackUI(EnhancedActor("explode-reke"),self.attack_cd*5,"[2]炸锐")
         self.reke_to_health_ui=CDableAttackUI(EnhancedActor("reke-rec"),self.attack_cd*10,"[3]恢复")
+        self.CDs=[self.normal_attack_ui,self.big_reke_ui,self.reke_to_health_ui]
         self.tip_text=""
         self.tip_text_timer=0
         self.scene:Scene
@@ -92,7 +93,7 @@ class MainActor:
             return
         self.reke_power-=1
         self.reke_to_health_ui.use()
-        self.health+=20
+        self.health=min(self.health+20,self.max_health)
         self.smoke.use()
     def use_big_reke(self): #使用大锐克
         if self.reke_power<3:
@@ -260,10 +261,17 @@ class Scene:
         self.mainActor=mainActor
         tips=TextActor("向右移动以开始>>>\n按下[1]使用锐克攻击\n按下[2]使用大招\n按下[3]抽锐克恢复生命值\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
         tips.pos=(width/2,height/2)
+
+        tips2=TextActor("你可以先尝试一下各种技能\n充电器可以给锐克充电->",fontsize=30,color="brown")
+        tips2.pos=(width/2,height*3/4+20)
+
+        charger=RecoveryUnlimited()
+        charger.pos=(width*3/4,height*3/4)
+
         self.doors=[] #门 
-        self.elements=[tips] #场景静态元素
+        self.elements=[tips,tips2] #场景静态元素
         self.actors=[] #场景动态元素
-        self.tools=[] #道具
+        self.tools=[charger] #道具
         self.self_misiles=[] #自身子弹
         self.enemy_misiles=[] #敌人子弹
         self.lists=[self.doors,self.elements,self.actors,self.tools,self.self_misiles,self.enemy_misiles]
@@ -344,6 +352,7 @@ class Scene:
             cat_ememy=GifActor("cat",(200,200))
             cat_ememy.pos=self.get_random_point()
             cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
+            cat_ememy.attr.tips="大耄耋"
             cat_ememy.attr.bind_door=chain 
             cat_ememy.attr.moving_speed=5.5
             cat_ememy.attr.max_health=300
@@ -592,6 +601,7 @@ class Tool(Actor):
         scale(self,50,50)
         self.tips="default"
         self.isUsed=False
+        self.once=True
     @override
     def draw(self):
         if self.isUsed:
@@ -602,7 +612,8 @@ class Tool(Actor):
         if self.isUsed:
             return
         if self.colliderect(mainActor.actor):
-            self.isUsed=True
+            if self.once:
+                self.isUsed=True
             self.onUse(mainActor)
     def onUse(self,mainActor:MainActor):
         pass
@@ -624,3 +635,15 @@ class Battery(Tool):
     @override
     def onUse(self,mainActor:MainActor):
         mainActor.reke_power=min(mainActor.reke_max_power,mainActor.reke_power+1)
+
+class RecoveryUnlimited(Tool):
+    def __init__(self):
+        super().__init__("ligntning")
+        self.tips="充电器"
+        self.once=False
+    @override
+    def onUse(self,mainActor:MainActor):
+        mainActor.reke_power=mainActor.reke_max_power
+        for cd in mainActor.CDs:
+            cd.cd=0
+        mainActor.set_tip_text("你的锐克电量恢复了！")
