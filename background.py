@@ -22,7 +22,7 @@ class MainActor:
         self.health=100 #生命值
         self.max_health=100 #最大生命值
         self.score=0 #分数
-        self.moving_speed=3.0
+        self.moving_speed=30.0
         self.inventory=[] #背包
         self.actor=Actor("dz")
         img_size=(100,100)
@@ -259,7 +259,7 @@ class Cigarette:
             self.actor_left.draw()
 
 class Scene:
-    def __init__(self,width,height,mainActor):
+    def __init__(self,width,height,mainActor:MainActor):
         global sceneInstance
         self.width=width
         self.height=height
@@ -284,6 +284,14 @@ class Scene:
         self.deltaXCount=0
         self.generate_level()
         sceneInstance=self
+        self.boss_supply_battery=None
+        self.boss=None
+    def is_boss(self):
+        if self.boss==None:
+            return False
+        if not self.boss.visible:
+            return False
+        return level_count>2 and level_count%10==0
     def delta_x(self,delta): 
         self.deltaXCount+=-delta
         for list in self.lists:
@@ -308,6 +316,9 @@ class Scene:
             self.generate_level()
         for enemy in self.actors:
             enemy.attr.tick()
+        if self.is_boss() and self.mainActor.reke_power<1 and (self.boss_supply_battery==None or self.boss_supply_battery.isUsed):
+            self.boss_supply_battery=self.spawn_battery()
+            self.boss_supply_battery.x=random.uniform(0,self.boss.attr.bind_door.x)
     def get_random_point(self,margin=100): 
         x_offset=self.deltaXCount+self.width
         x=random.uniform(x_offset+margin,x_offset+self.width-margin)
@@ -325,10 +336,12 @@ class Scene:
         battery=Battery()
         battery.pos=self.get_random_point()
         self.tools.append(battery)
+        return battery
     def spawn_nicotine(self):
         nicotine=Nicotine()
         nicotine.pos=self.get_random_point()
         self.tools.append(nicotine)
+        return nicotine
     def generate_level(self):
         real_level_count=level_count+1
         x_offset=self.deltaXCount+self.width
@@ -362,6 +375,7 @@ class Scene:
             cat_ememy.attr.moving_speed=5.1
             cat_ememy.attr.max_health=250
             cat_ememy.attr.health=250
+            self.boss=cat_ememy
             self.actors.append(cat_ememy)
 
             self.spawn_battery()
