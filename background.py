@@ -103,11 +103,16 @@ class MainActor:
             self.set_tip_text("攻击冷却中!!!")
             return
         self.big_reke_ui.use()
+        def spawn_missile(angle):
+            def _spawn():
+                misile=CigaretteAttack(self.get_position(),angle,self.reke_version)
+                self.scene.self_misiles.append(misile)
+            return _spawn
         angle=0
         self.reke_power-=3
         for i in range(8):
-            misile=CigaretteAttack(self.get_position(),angle,self.reke_version)
-            self.scene.self_misiles.append(misile)
+            timerEffect=Effect(None,60*i)
+            timerEffect.attach_on_finish_functions.append(spawn_missile(angle))
             angle+=math.pi/4
     def handle_moving(self,x,y): 
         if x<0:
@@ -354,9 +359,9 @@ class Scene:
             cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
             cat_ememy.attr.tips="大耄耋"
             cat_ememy.attr.bind_door=chain 
-            cat_ememy.attr.moving_speed=5.5
-            cat_ememy.attr.max_health=300
-            cat_ememy.attr.health=300
+            cat_ememy.attr.moving_speed=5.1
+            cat_ememy.attr.max_health=250
+            cat_ememy.attr.health=250
             self.actors.append(cat_ememy)
 
             self.spawn_battery()
