@@ -22,7 +22,7 @@ class MainActor:
         self.health=100 #生命值
         self.max_health=100 #最大生命值
         self.score=0 #分数
-        self.moving_speed=30.0
+        self.moving_speed=3.0
         self.inventory=[] #背包
         self.actor=Actor("dz")
         img_size=(100,100)
@@ -342,6 +342,10 @@ class Scene:
         nicotine.pos=self.get_random_point()
         self.tools.append(nicotine)
         return nicotine
+    def spawn_poizon(self):
+        poizon=Poizon()
+        poizon.pos=self.get_random_point()
+        self.tools.append(poizon)
     def generate_level(self):
         real_level_count=level_count+1
         x_offset=self.deltaXCount+self.width
@@ -360,6 +364,8 @@ class Scene:
             self.spawn_battery()
         if random.random()<0.5:
             self.spawn_nicotine()
+        if random.random()<0.5:
+            self.spawn_poizon()
         if real_level_count>2 and real_level_count%10==0:
             #boss
             chain=EnhancedActor("chain")
@@ -377,6 +383,8 @@ class Scene:
             cat_ememy.attr.health=250
             self.boss=cat_ememy
             self.actors.append(cat_ememy)
+
+
 
             self.spawn_battery()
             self.spawn_battery()
@@ -677,3 +685,11 @@ class RecoveryUnlimited(Tool):
         for cd in mainActor.CDs:
             cd.cd=0
         mainActor.set_tip_text("你的锐克电量恢复了！")
+
+
+class Poizon(Tool):
+    def __init__(self):
+        super().__init__("poizon")
+        self.tips="毒"
+    def onUse(self,mainActor:MainActor):
+        PoisonEffect(mainActor)

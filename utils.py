@@ -293,6 +293,16 @@ class SlowRecoverEffect(Effect):
         delta=self.strength*assets.elapsed_time_frame/1000
         self.target.health=min(self.target.health+delta,self.target.max_health)
 
+class PoisonEffect(Effect):
+    def __init__(self,target,time=5*1000,strength=4):
+        super().__init__(target,time)
+        self.strength=strength
+        self.isShowUI=True
+        self.tips="中毒"
+    def invoke(self):
+        delta=self.strength*assets.elapsed_time_frame/1000
+        self.target.health=max(self.target.health-delta,1)
+
 class Attack(EnhancedActor):
     def __init__(self,img):
         super().__init__(img)
