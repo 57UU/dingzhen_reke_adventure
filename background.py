@@ -53,7 +53,21 @@ class MainActor:
     def set_tip_text(self,text): #设置提示文本
         self.tip_text=text
         self.tip_text_timer=1200
+    @property
+    def x(self): #获取x坐标
+        return self.actor.x
+    @x.setter
+    def x(self,value): #设置x坐标
+        self.set_position((value,self.actor.y))
+    @property
+    def y(self): #获取y坐标
+        return self.actor.y
+    @y.setter
+    def y(self,value): #设置y坐标
+        self.set_position((self.actor.x,value))
     def set_position(self,position): #设置位置
+        if self.isLosed:
+            return
         self.actor.pos=position
         x=position[0]
         y=position[1]
@@ -264,7 +278,7 @@ class Scene:
         self.width=width
         self.height=height
         self.mainActor=mainActor
-        tips=TextActor("向右移动以开始>>>\n按下[1]使用锐克攻击\n按下[2]使用大招\n按下[3]抽锐克恢复生命值\n道具[尼古丁]可以升级锐克等级\n道具[电池]可以恢复锐克电量", 30, color="red")
+        tips=TextActor("向右移动以开始>>>\n按下[1]使用锐克攻击(消耗1格电)\n按下[2]使用大招(消耗3格电)\n按下[3]抽锐克恢复生命值(消耗一格电)\n道具[尼古丁]可以升级锐克等级提升攻击伤害\n道具[电池]可以恢复锐克电量", 30, color="red")
         tips.pos=(width/2,height/2)
 
         tips2=TextActor("你可以先尝试一下各种技能\n充电器可以给锐克充电->",fontsize=30,color="brown")
@@ -404,6 +418,10 @@ class Scene:
         explosiveCat=ExplosiveCatEnemy.create(self.mainActor,door1,self.width)
         explosiveCat.pos=self.get_random_point()
         self.actors.append(explosiveCat)
+
+        slime=SlimeEnemy.create(self.mainActor,door1,self.width)
+        slime.pos=self.get_random_point()
+        self.actors.append(slime)
     def draw(self): 
         self.background.draw()
         for element in self.elements:
@@ -537,6 +555,7 @@ class EnemyData:
         self.door=door
         self.x_range_lim=x_range_lim
         self.cd=0 #milliseconds
+        self.cd_duaration=400
         self.text_y_offset=-35
         self.bind_door=bind_door
     def attacked(self,damage): #被攻击
@@ -552,12 +571,15 @@ class EnemyData:
                 effect.attach_on_finish_functions.append(self._make_bind_door_invisible)
     def _make_bind_door_invisible(self): 
         self.bind_door.visible=False
+    def set_cd(self):
+        self.cd=self.cd_duaration
     def tick(self):
         if not self.actor.visible:
             return
         if self.cd>0:
             self.cd-=assets.elapsed_time_frame
             return
+        
         x_direction=self.mainActor.get_position()[0]-self.actor.pos[0]
         y_direction=self.mainActor.get_position()[1]-self.actor.pos[1]
         x_direction,y_direction=normalize(x_direction,y_direction)
@@ -567,6 +589,9 @@ class EnemyData:
         right_lim=self.door.x+self.x_range_lim
         self.actor.x=max(left_lim,self.actor.x)
         self.actor.x=min(right_lim,self.actor.x)
+        self.logic_tick()
+    def logic_tick(self): #逻辑tick
+        pass
     def draw(self):
         if self.actor.visible:
             screen.draw.text(
@@ -601,7 +626,7 @@ class CatEnemy(EnemyData):
             self.actor.range=(3,7)
         if self.actor.colliderect(self.mainActor.actor):
             self.mainActor.be_attacked(10)
-            self.cd=200
+            self.set_cd()
             
 class ExplosiveCatEnemy(EnemyData):
     def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
@@ -622,11 +647,37 @@ class ExplosiveCatEnemy(EnemyData):
             self.attacked(self.max_health)
             entity=ExplodeAttack(3,self.actor.pos)
             sceneInstance.enemy_misiles.append(entity)
+            self.set_cd()
     @staticmethod
     def create(mainActor:MainActor,door:Door,x_range_lim):
         bind=EnhancedActor("cat-3")
         scale(bind,100,100)
         attr= ExplosiveCatEnemy(bind,mainActor,door,x_range_lim)
+        bind.attr=attr
+        return bind
+
+class SlimeEnemy(EnemyData):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
+        super().__init__(bind,mainActor,door,x_range_lim)
+        self.tips="史莱姆"
+        self.moving_speed=1.5
+        scale_without_img(self.actor,0.8)
+    @override
+    def logic_tick(self):
+        if self.actor.colliderect(self.mainActor.actor):
+            self.mainActor.be_attacked(5)
+            self.cd=200
+            d_x=self.mainActor.get_position()[0]-self.actor.pos[0]
+            d_y=self.mainActor.get_position()[1]-self.actor.pos[1]
+            d_x,d_y=normalize(d_x,d_y)
+            RepelEffect(self.mainActor,(d_x,d_y))
+            # InflateEffect(self.actor)
+            self.set_cd()
+    @staticmethod
+    def create(mainActor:MainActor,door:Door,x_range_lim):
+        bind=EnhancedActor("slime")
+        scale(bind,100,100)
+        attr= SlimeEnemy(bind,mainActor,door,x_range_lim)
         bind.attr=attr
         return bind
 

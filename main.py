@@ -18,6 +18,7 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 WIDTH = 1000
 HEIGHT = 600
+TITLE="丁真大冒险"
 
 assets.screen_height=HEIGHT
 assets.screen_width=WIDTH

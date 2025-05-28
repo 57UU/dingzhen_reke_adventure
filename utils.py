@@ -223,6 +223,7 @@ class Effect():
     def __init__(self,target,time):
         self.target=target
         self.time=time
+        self.duration=time
         effects.append(self)
         self.isShowUI=False
         self.tips="default"
@@ -302,6 +303,23 @@ class PoisonEffect(Effect):
     def invoke(self):
         delta=self.strength*assets.elapsed_time_frame/1000
         self.target.health=max(self.target.health-delta,1)
+
+class InflateEffect(Effect):
+    def __init__(self,target,time=1*1000,strength=1.5):
+        super().__init__(target,time)
+        self.strength=strength
+        self.w_original=self.target.width
+        self.h_original=self.target.height
+    @override
+    def invoke(self):
+        if self.time<self.duration/2:
+            # scale up
+            _x=self.duration- self.time
+            ratio=_x*(self.strength-1)/(self.duration/2)+1
+        else:
+            # scale down
+            ratio=1+self.time*(self.strength-1)/(self.duration/2)
+        scale(self.target,self.w_original*ratio,self.h_original*ratio)
 
 class Attack(EnhancedActor):
     def __init__(self,img):
