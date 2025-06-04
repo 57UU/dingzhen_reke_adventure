@@ -28,7 +28,13 @@ class MainActor:
         img_size=(100,100)
         self.img_size=img_size
         scale(self.actor,*img_size)
-        scale_without_img(self.actor,0.5)
+        
+        scale_ratio=0.5
+        scale_without_img(self.actor,scale_ratio)
+        self.actor.height*=2 
+        scaled_w=img_size[0]*scale_ratio
+        scaled_h=img_size[1]*scale_ratio
+        self.actor.anchor=(scaled_w,scaled_h+20) 
         self.actor.pos=(assets.screen_width*2/3,assets.screen_height/2)
         self.reke_version=1
         self.reke_max_power=5
@@ -72,9 +78,9 @@ class MainActor:
         x=position[0]
         y=position[1]
         self.body.actor.x=x
-        self.body.actor.y=y+60
+        self.body.actor.y=y+40
         cig_x=x
-        cig_y=y-6
+        cig_y=y-26
         self.cigarette.set_position((cig_x,cig_y))
     def attacked(self,damage): 
         self.be_attacked(damage)
@@ -558,6 +564,10 @@ class EnemyData:
         self.cd_duaration=400
         self.text_y_offset=-35
         self.bind_door=bind_door
+    def set_max_health(self,level_count): #设置最大生命值
+        max_health=mapping.enemy_health_level_index(level_count)
+        self.max_health=max_health
+        self.health=max_health
     def attacked(self,damage): #被攻击
         self.health-=damage
         if self.health<=0:
@@ -661,7 +671,8 @@ class SlimeEnemy(EnemyData):
         super().__init__(bind,mainActor,door,x_range_lim)
         self.tips="史莱姆"
         self.moving_speed=1.5
-        scale_without_img(self.actor,0.8)
+        scale_without_img(self.actor,0.5)
+        # ResizeEffect(self.actor,150,150,100,100)
     @override
     def logic_tick(self):
         if self.actor.colliderect(self.mainActor.actor):
@@ -671,11 +682,10 @@ class SlimeEnemy(EnemyData):
             d_y=self.mainActor.get_position()[1]-self.actor.pos[1]
             d_x,d_y=normalize(d_x,d_y)
             RepelEffect(self.mainActor,(d_x,d_y))
-            # InflateEffect(self.actor)
             self.set_cd()
     @staticmethod
     def create(mainActor:MainActor,door:Door,x_range_lim):
-        bind=EnhancedActor("slime")
+        bind=GifActor("slime")
         scale(bind,100,100)
         attr= SlimeEnemy(bind,mainActor,door,x_range_lim)
         bind.attr=attr

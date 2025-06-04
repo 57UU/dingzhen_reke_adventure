@@ -37,7 +37,7 @@ class EmptyActor(Actor):
 def get_empty_actor():
     return EmptyActor()
 
-def scale(actor, new_width, new_height):
+def scale(actor:Actor, new_width, new_height):
     actor._surf=pygame.transform.scale(actor._surf, (new_width, new_height))
     actor.anchor=(new_width/2,new_height/2)
     actor.width=new_width
@@ -312,14 +312,33 @@ class InflateEffect(Effect):
         self.h_original=self.target.height
     @override
     def invoke(self):
-        if self.time<self.duration/2:
-            # scale up
-            _x=self.duration- self.time
-            ratio=_x*(self.strength-1)/(self.duration/2)+1
-        else:
-            # scale down
-            ratio=1+self.time*(self.strength-1)/(self.duration/2)
-        scale(self.target,self.w_original*ratio,self.h_original*ratio)
+        currentRatio=(1-self.time/self.duration)*(self.strength-1)+1
+        h=self.h_original*currentRatio
+        w=self.w_original*currentRatio
+        # scale(self.target,w,h)
+        self.target._surf=pygame.transform.scale(self.target._surf, (w, h))
+    @override
+    def on_finish(self):
+        pass
+        # ResizeEffect(self.target,self.w_original,self.h_original,self.duration)
+
+class ResizeEffect(Effect):
+    def __init__(self,target,width,height,width_orig,height_orig,time=1*1000,):
+        super().__init__(target,time)
+        self.w_original=width_orig
+        self.h_original=height_orig
+        self.target_width=width
+        self.target_height=height
+    @override
+    def invoke(self):
+        currentRatio=(1-self.time/self.duration)
+        h=self.h_original*(1-currentRatio)+self.target_height*(currentRatio)
+        w=self.w_original*(1-currentRatio)+self.target_width*(currentRatio)
+        self.target._surf=pygame.transform.scale(self.target._surf, (w, h))
+        self.target.anchor=(w/2,h/2)
+    @override
+    def on_finish(self):
+        ResizeEffect(self.target,self.w_original,self.h_original,self.target_width,self.target_height,self.duration)
 
 class Attack(EnhancedActor):
     def __init__(self,img):

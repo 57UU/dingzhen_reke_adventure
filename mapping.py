@@ -4,7 +4,7 @@ def reke_version_repel_strength(reke_version):
     return 300+100*math.log(reke_version,2)
 
 def reke_version_damage(reke_version):
-    return 50+10*math.log(reke_version,2)
+    return 50+10*math.log(reke_version,1.5)
 
 def reke_version_cigarette_damage(reke_version):
     return 50+10*math.log(reke_version,2)
@@ -14,3 +14,6 @@ def rad_to_deg(rad):
 
 def enemy_count_level_index(levelIndex:int):
     return max(1,math.floor(math.log(levelIndex,2)))
+
+def enemy_health_level_index(levelIndex:int):
+    return 100+10*max(1,math.floor(math.log(levelIndex)))
