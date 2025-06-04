@@ -340,6 +340,29 @@ class ResizeEffect(Effect):
     def on_finish(self):
         ResizeEffect(self.target,self.w_original,self.h_original,self.target_width,self.target_height,self.duration)
 
+class FontSizeEffect(Effect):
+    def __init__(self,target,speed=3,low=20,high=30):
+        super().__init__(target,1145141919810)
+        self.low=low
+        self.high=high
+        self.speed=speed
+        self.stop=False
+        self.increase=True
+    @override
+    def invoke(self):
+        if self.stop:
+            self.time=0
+            return
+        if self.increase:
+            self.target.fontsize+=self.speed*assets.elapsed_time_frame/1000
+            if self.target.fontsize>=self.high:
+                self.increase=False
+        else:
+            self.target.fontsize-=self.speed*assets.elapsed_time_frame/1000
+            if self.target.fontsize<=self.low:
+                self.increase=True
+
+
 class Attack(EnhancedActor):
     def __init__(self,img):
         super().__init__(img)

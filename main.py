@@ -13,12 +13,20 @@ screen : pgzero.screen.Screen
 keyboard: pgzero.keyboard.Keyboard  
 import os
 import assets
+import enum
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 WIDTH = 1000
 HEIGHT = 600
 TITLE="丁真大冒险"
+
+
+class GameState(enum.Enum):
+    MAIN_MEUE=enum.auto()
+    GAME=enum.auto()
+
+game_state=GameState.MAIN_MEUE
 
 assets.screen_height=HEIGHT
 assets.screen_width=WIDTH
@@ -33,8 +41,27 @@ loseActor.color=(200,25,25)
 loseActor.pos=(WIDTH/2,HEIGHT/2)
 loseActor.visible=False
 
+mainMenuActors=[]
+title=TextActor("丁真大冒险",50)
+title.pos=(WIDTH/2,HEIGHT/4)
+
+tip=TextActor("按空格开始游戏",20)
+tip.pos=(WIDTH/2,HEIGHT/4*3)
+
+bg=EnhancedActor("bg")
+
+mainMenuActors.append(bg)
+mainMenuActors.append(title)
+mainMenuActors.append(tip)
+
+fontsizeEffect=FontSizeEffect(title,20,45,70)
+
 def draw():
     screen.clear()
+    if game_state==GameState.MAIN_MEUE:
+        for actor in mainMenuActors:
+            actor.draw()
+        return
     scene.draw()
     effects_text=""
     for effect in effects:
@@ -50,6 +77,8 @@ def update():
     assets.elapsed_time_frame=clock.get_time()
     background.screen=screen
     utils.screen=screen
+    if game_state==GameState.MAIN_MEUE:
+        pass
     scene.tick()
     for a in gif_actors:
         a.update(clock.get_time()/1000)
@@ -97,7 +126,14 @@ def update():
 
 
 def on_key_down(key):
+    global game_state
     keys_pressed.add(key)
+    if key==keys.SPACE:
+        if game_state==GameState.MAIN_MEUE:
+            fontsizeEffect.stop=True
+            game_state=GameState.GAME
+            return
+    
     if key==keys.K_1:
         mainActor.attack()
     if key==keys.K_2:
