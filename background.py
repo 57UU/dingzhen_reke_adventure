@@ -660,7 +660,8 @@ class ExplosiveCatEnemy(EnemyData):
             self.set_cd()
     @staticmethod
     def create(mainActor:MainActor,door:Door,x_range_lim):
-        bind=EnhancedActor("cat-3")
+        # bind=EnhancedActor("cat-3")
+        bind=GifActor("cat-3",(100,100))
         scale(bind,100,100)
         attr= ExplosiveCatEnemy(bind,mainActor,door,x_range_lim)
         bind.attr=attr
@@ -681,7 +682,7 @@ class SlimeEnemy(EnemyData):
             d_x=self.mainActor.get_position()[0]-self.actor.pos[0]
             d_y=self.mainActor.get_position()[1]-self.actor.pos[1]
             d_x,d_y=normalize(d_x,d_y)
-            RepelEffect(self.mainActor,(d_x,d_y))
+            RepelEffect(self.mainActor,(d_x,d_y),isShowText=True)
             self.set_cd()
     @staticmethod
     def create(mainActor:MainActor,door:Door,x_range_lim):

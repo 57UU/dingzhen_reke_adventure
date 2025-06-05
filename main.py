@@ -81,11 +81,13 @@ def draw():
             actor.draw()
         return
     scene.draw()
-    effects_text=""
+
+    effect_ui_height=HEIGHT/3
     for effect in effects:
         if effect.isShowUI:
-            effects_text+=effect.get_str()+"\n"
-    draw_text(effects_text,(0,HEIGHT/3),"cyan")
+            effects_text=effect.get_str()
+            draw_text(effects_text,(0,effect_ui_height),utils.effect_type_to_color[effect.type])
+            effect_ui_height+=20
     mainActor.draw()
     loseActor.draw()
     if isPause:

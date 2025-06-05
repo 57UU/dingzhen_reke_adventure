@@ -218,6 +218,18 @@ class RandomEnvironment(EmptyActor):
         scale(self,*size)
 
 import typing
+import enum
+class EffectType(enum.Enum):
+    POSITIVE=enum.auto()
+    NEGATIVE=enum.auto()
+    NEUTRAL=enum.auto()
+
+
+effect_type_to_color={
+    EffectType.POSITIVE:(51,255,255),
+    EffectType.NEGATIVE:(153,0,0),
+    EffectType.NEUTRAL:(204,204,0)
+}
 
 class Effect():
     def __init__(self,target,time):
@@ -228,6 +240,7 @@ class Effect():
         self.isShowUI=False
         self.tips="default"
         self.attach_on_finish_functions=[]
+        self.type=EffectType.NEUTRAL
     def tick(self):
         if self.time>0:
             self.invoke()
@@ -261,11 +274,14 @@ class DiffuseEffect(Effect):
         self.target.visible=False
 
 class RepelEffect(Effect):
-    def __init__(self,target,direction,strength=300.0,isVanish=False):
+    def __init__(self,target,direction,strength=300.0,isVanish=False,isShowText=False):
         super().__init__(target,500)
         self.direction=direction
         self.strength=strength
         self.isVanish=isVanish
+        self.isShowUI=isShowText
+        self.tips="被击退"
+        self.type=EffectType.NEGATIVE
     def invoke(self):
         self.target.x+=self.direction[0]*self.strength*assets.elapsed_time_frame/1000
         self.target.y+=self.direction[1]*self.strength*assets.elapsed_time_frame/1000
@@ -290,6 +306,7 @@ class SlowRecoverEffect(Effect):
         self.strength=strength
         self.isShowUI=True
         self.tips="缓慢恢复生命"
+        self.type=EffectType.POSITIVE
     def invoke(self):
         delta=self.strength*assets.elapsed_time_frame/1000
         self.target.health=min(self.target.health+delta,self.target.max_health)
@@ -300,6 +317,7 @@ class PoisonEffect(Effect):
         self.strength=strength
         self.isShowUI=True
         self.tips="中毒"
+        self.type=EffectType.NEGATIVE
     def invoke(self):
         delta=self.strength*assets.elapsed_time_frame/1000
         self.target.health=max(self.target.health-delta,1)
