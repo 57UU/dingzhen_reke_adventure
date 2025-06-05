@@ -78,6 +78,21 @@ def rectangle_actor(width,height,color=(255,255,255)):
     actor.width=width
     actor.height=height
     return actor
+
+def flip_pygame_surface(surface):
+    return pygame.transform.flip(surface, True, False)
+
+def clone_actor(actor:Actor):
+    new_actor=get_empty_actor()
+    new_actor._surf=actor._surf.copy()
+    new_actor.width=actor.width
+    new_actor.height=actor.height
+    new_actor.anchor=actor.anchor
+    return new_actor
+
+def xor(a,b)->bool:
+    return (a and not b) or (not a and b)
+
 from typing import List,Tuple, override
 cache={}
 def get_images_from_folder(folder_path)->List[pygame.Surface]:
@@ -103,6 +118,7 @@ class GifActor(EmptyActor):
         self.time_since_last_frame = 0
         self.visible=True
         gif_actors.append(self)
+        self.flip_state=False
         
         self.frames=get_images_from_folder(gif_path)
 
@@ -121,7 +137,7 @@ class GifActor(EmptyActor):
             for frame in self.frames:
                 tmp.append(pygame.transform.scale(frame, size))
             self.frames=tmp
-    
+        self.frame_flip_state=[False]*len(self.frames)
     def update(self, dt):
         if self.visible:
             self.time_since_last_frame += dt
@@ -133,6 +149,10 @@ class GifActor(EmptyActor):
                 self._surf = self.frames[self.current_frame]
         else:
             self._surf = placeholder_image
+        if xor(self.flip_state,self.frame_flip_state[self.current_frame]):
+            self.frames[self.current_frame]=flip_pygame_surface(self.frames[self.current_frame])
+            self._surf = self.frames[self.current_frame]
+            self.frame_flip_state[self.current_frame]=not self.frame_flip_state[self.current_frame]
             
     def draw(self):
         super().draw()

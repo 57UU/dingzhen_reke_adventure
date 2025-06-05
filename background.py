@@ -564,6 +564,7 @@ class EnemyData:
         self.cd_duaration=400
         self.text_y_offset=-35
         self.bind_door=bind_door
+        self.isMovingRight=True
     def set_max_health(self,level_count): #设置最大生命值
         max_health=mapping.enemy_health_level_index(level_count)
         self.max_health=max_health
@@ -591,6 +592,10 @@ class EnemyData:
             return
         
         x_direction=self.mainActor.get_position()[0]-self.actor.pos[0]
+        if x_direction>0:
+            self.isMovingRight=True
+        elif x_direction<0:
+            self.isMovingRight=False
         y_direction=self.mainActor.get_position()[1]-self.actor.pos[1]
         x_direction,y_direction=normalize(x_direction,y_direction)
         self.actor.x+=x_direction*self.moving_speed
@@ -653,6 +658,7 @@ class ExplosiveCatEnemy(EnemyData):
             return
         if self.cd>0:
             return
+        self.actor.flip_state=self.isMovingRight
         if self.actor.colliderect(self.mainActor.actor):
             self.attacked(self.max_health)
             entity=ExplodeAttack(3,self.actor.pos)
