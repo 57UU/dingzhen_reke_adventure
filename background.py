@@ -284,8 +284,8 @@ class Scene:
         self.width=width
         self.height=height
         self.mainActor=mainActor
-        tips=TextActor("向右移动以开始>>>\n按下[1]使用锐克攻击(消耗1格电)\n按下[2]使用大招(消耗3格电)\n按下[3]抽锐克恢复生命值(消耗一格电)\n道具[尼古丁]可以升级锐克等级提升攻击伤害\n道具[电池]可以恢复锐克电量", 30, color="red")
-        tips.pos=(width/2,height/2)
+        tips=TextActor("按下[1]使用锐克攻击(消耗1格电)\n按下[2]使用大招(消耗3格电)\n按下[3]抽锐克恢复生命值(消耗一格电)\n\n道具[尼古丁]可以升级锐克等级提升攻击伤害\n道具[电池]可以恢复锐克电量\n\n向右移动以开始>>>", 30, color="red")
+        tips.pos=(width/2,height/2-30)
 
         tips2=TextActor("你可以先尝试一下各种技能\n充电器可以给锐克充电->",fontsize=30,color="brown")
         tips2.pos=(width/2,height*3/4+20)

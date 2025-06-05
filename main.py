@@ -54,7 +54,25 @@ mainMenuActors.append(bg)
 mainMenuActors.append(title)
 mainMenuActors.append(tip)
 
-fontsizeEffect=FontSizeEffect(title,20,45,70)
+fontsizeEffect=FontSizeEffect(title,20,50,70)
+fontsizeEffect2=FontSizeEffect(tip,10,20,30)
+
+isPause=False
+
+pauseActors=[]
+
+pauseBg=utils.rectangle_actor(WIDTH/2,HEIGHT/2,(123,123,123))
+pauseBg.pos=(WIDTH/2,HEIGHT/2)
+pauseActors.append(pauseBg)
+
+pauseText=TextActor("游戏暂停",50)
+pauseText.pos=(WIDTH/2,HEIGHT/2)
+pauseActors.append(pauseText)
+
+resumeText=TextActor("按ESC继续游戏",20)
+resumeText.pos=(WIDTH/2,HEIGHT/2+50)
+pauseActors.append(resumeText)
+
 
 def draw():
     screen.clear()
@@ -67,9 +85,13 @@ def draw():
     for effect in effects:
         if effect.isShowUI:
             effects_text+=effect.get_str()+"\n"
-    draw_text(effects_text,(0,HEIGHT/3))
+    draw_text(effects_text,(0,HEIGHT/3),"cyan")
     mainActor.draw()
     loseActor.draw()
+    if isPause:
+        for actor in pauseActors:
+            actor.draw()
+        return
 
 clock = pygame.time.Clock()
 def update():
@@ -77,63 +99,67 @@ def update():
     assets.elapsed_time_frame=clock.get_time()
     background.screen=screen
     utils.screen=screen
-    if game_state==GameState.MAIN_MEUE:
-        pass
-    scene.tick()
-    for a in gif_actors:
-        a.update(clock.get_time()/1000)
     for effect in effects:
         effect.tick()
-    for cd in cd_counter_list:
-        cd.tick()
-    mainActor.tick()
-    if mainActor.isLosed:
-        loseActor.visible=True
-    else:
-        moving=[0,0]
-        if keys.RIGHT in keys_pressed:
-            moving[0]=1
-        if keys.LEFT in keys_pressed:
-            moving[0]=-1
-        if keys.UP in keys_pressed:
-            moving[1]=-1
-        if keys.DOWN in keys_pressed:
-            moving[1]=1
-        
-        mainActor.handle_moving(*moving)
+    if game_state==GameState.MAIN_MEUE:
+        pass
+    elif game_state==GameState.GAME and not isPause:
+        scene.tick()
+        for a in gif_actors:
+            a.update(clock.get_time()/1000)
 
-        mainActorPos=mainActor.get_position()
-        if mainActorPos[0]>WIDTH*3/4:
-            deltaX=mainActorPos[0]-WIDTH*3/4
-            mainActor.set_position((mainActorPos[0]-deltaX,mainActorPos[1]))
-            scene.delta_x(-deltaX)
+        for cd in cd_counter_list:
+            cd.tick()
+        mainActor.tick()
+        if mainActor.isLosed:
+            loseActor.visible=True
+        else:
+            moving=[0,0]
+            if keys.RIGHT in keys_pressed:
+                moving[0]=1
+            if keys.LEFT in keys_pressed:
+                moving[0]=-1
+            if keys.UP in keys_pressed:
+                moving[1]=-1
+            if keys.DOWN in keys_pressed:
+                moving[1]=1
+            
+            mainActor.handle_moving(*moving)
 
-        for element in scene.doors:
-            if element.colliderect(mainActor.actor):
-                element.attr.on_enter(mainActor)
-        for element in scene.tools:
-            element.invoke(mainActor)
-        for attack in scene.self_misiles:
-            if not attack.visible:
-                    continue
-            for enemy in scene.actors:
-                attack.try_attack(enemy)
-        for attack in scene.enemy_misiles:
-            if not attack.visible:
-                    continue
-            attack.try_attack(mainActor)
+            mainActorPos=mainActor.get_position()
+            if mainActorPos[0]>WIDTH*3/4:
+                deltaX=mainActorPos[0]-WIDTH*3/4
+                mainActor.set_position((mainActorPos[0]-deltaX,mainActorPos[1]))
+                scene.delta_x(-deltaX)
+
+            for element in scene.doors:
+                if element.colliderect(mainActor.actor):
+                    element.attr.on_enter(mainActor)
+            for element in scene.tools:
+                element.invoke(mainActor)
+            for attack in scene.self_misiles:
+                if not attack.visible:
+                        continue
+                for enemy in scene.actors:
+                    attack.try_attack(enemy)
+            for attack in scene.enemy_misiles:
+                if not attack.visible:
+                        continue
+                attack.try_attack(mainActor)
     clock.tick(60)
 
 
 def on_key_down(key):
-    global game_state
+    global game_state,isPause
     keys_pressed.add(key)
     if key==keys.SPACE:
         if game_state==GameState.MAIN_MEUE:
             fontsizeEffect.stop=True
+            fontsizeEffect2.stop=True
             game_state=GameState.GAME
             return
-    
+    if  key==keys.ESCAPE and game_state==GameState.GAME:
+        isPause=not isPause
     if key==keys.K_1:
         mainActor.attack()
     if key==keys.K_2:
