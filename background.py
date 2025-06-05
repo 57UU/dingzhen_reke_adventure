@@ -24,7 +24,7 @@ class MainActor:
         self.score=0 #分数
         self.moving_speed=3.0
         self.inventory=[] #背包
-        self.actor=Actor("dz")
+        self.actor=EnhancedActor("dz")
         img_size=(100,100)
         self.img_size=img_size
         scale(self.actor,*img_size)
@@ -36,7 +36,7 @@ class MainActor:
         scaled_h=img_size[1]*scale_ratio
         self.actor.anchor=(scaled_w,scaled_h+20) 
         self.actor.pos=(assets.screen_width*2/3,assets.screen_height/2)
-        self.reke_version=1
+        self.reke_version=10 if assets.debug else 1
         self.reke_max_power=5
         self.reke_power:int=5
         self.dz_normal=load_png_with_scale("dz",img_size)
@@ -398,7 +398,7 @@ class Scene:
             cat_ememy.attr=CatEnemy(cat_ememy,self.mainActor,door1,self.width)
             cat_ememy.attr.tips="大耄耋"
             cat_ememy.attr.bind_door=chain 
-            cat_ememy.attr.moving_speed=5.1
+            cat_ememy.attr.moving_speed=4.4
             cat_ememy.attr.max_health=250
             cat_ememy.attr.health=250
             self.boss=cat_ememy

@@ -17,3 +17,6 @@ def enemy_count_level_index(levelIndex:int):
 
 def enemy_health_level_index(levelIndex:int):
     return 100+10*max(1,math.floor(math.log(levelIndex)))
+
+def reke_version_to_cigrarette_strength(reke_version):
+    return 500+30*reke_version

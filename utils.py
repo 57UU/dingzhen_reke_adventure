@@ -448,11 +448,12 @@ class CigaretteAttack(Attack):
         super().__init__("cigarette-2")
         direction=(math.cos(angle),math.sin(angle))
         scale_ratio(self,0.5)
+        scale_without_img(self,2)
         self.angle=-mapping.rad_to_deg(angle)
         self.strength=mapping.reke_version_repel_strength(reke_version)*2
         self.pos=pos
         self.damage=mapping.reke_version_cigarette_damage(reke_version)
-        RepelEffect(self,direction,500,isVanish=True)
+        RepelEffect(self,direction,mapping.reke_version_to_cigrarette_strength(reke_version),isVanish=True)
     @override
     def attack(self,enemy):
         enemy.attr.attacked(self.damage)
