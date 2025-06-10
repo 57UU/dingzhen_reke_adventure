@@ -15,6 +15,11 @@ difficulty=1 #约大越难
 x_left_door=None
 level_count=0
 
+def reset_global_variables():
+    global moving_speed,difficulty,x_left_door,level_count
+    x_left_door=None
+    level_count=0
+    moving_speed=3
 
 class MainActor: 
     def __init__(self):
@@ -213,6 +218,7 @@ class MainActor:
             self.tip_text_timer-=assets.elapsed_time_frame
     def clear(self): #清除
         CDableAttackUI.reset()
+        reset_global_variables()
 class Body:
     def __init__(self):
         self.runlefts=[]
@@ -575,7 +581,7 @@ def get_random_door(): #随机生成一个门
     return random.choice(doors)
 
 class EnemyData: 
-    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim,bind_door:EnhancedActor=None):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim,bind_door:EnhancedActor=None,useClockwise=False):
         self.actor=bind
         self.mainActor=mainActor
         self.tips="default"
@@ -590,6 +596,10 @@ class EnemyData:
         self.bind_door=bind_door
         self.isMovingRight=True
         self.extraActors=[]
+        self.useClockwise=useClockwise
+        self.clockwiseSpeed=3
+        if useClockwise:
+            self.clockwiseDirection=random.random()<0.5
     def set_max_health(self,level_count): #设置最大生命值
         max_health=mapping.enemy_health_level_index(level_count)
         self.max_health=max_health
@@ -631,6 +641,15 @@ class EnemyData:
         self.actor.y+=y_direction*self.moving_speed
         left_lim=self.door.x
         right_lim=self.door.x+self.x_range_lim
+        
+        if self.useClockwise:
+            dx,dy=mapping.get_vertical_vector(x_direction,y_direction,self.clockwiseDirection)
+            dx*=self.clockwiseSpeed
+            dy*=self.clockwiseSpeed
+
+            self.actor.x+=dx
+            self.actor.y+=dy
+
         self.actor.x=max(left_lim,self.actor.x)
         self.actor.x=min(right_lim,self.actor.x)
         self.logic_tick()
@@ -660,7 +679,7 @@ class EnemyData:
 
 class CatEnemy(EnemyData): 
     def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
-        super().__init__(bind,mainActor,door,x_range_lim)
+        super().__init__(bind,mainActor,door,x_range_lim,useClockwise=True)
         self.tips="普通耄耋"
         scale_without_img(self.actor,0.6)
         

@@ -26,3 +26,8 @@ def get_angle(dx, dy):
     angle_rad = math.atan2(dy, dx)
     return rad_to_deg(angle_rad)
     
+def get_vertical_vector(dx,dy,clockwise):
+    if clockwise:
+        return -dy, dx
+    else:
+        return dy, -dx
