@@ -11,7 +11,8 @@ def reke_version_cigarette_damage(reke_version):
 
 def rad_to_deg(rad):
     return rad*180/math.pi
-
+def deg_to_rad(deg):
+    return deg*math.pi/180
 def enemy_count_level_index(levelIndex:int):
     return max(1,math.floor(math.log(levelIndex,2)))
 
@@ -20,3 +21,8 @@ def enemy_health_level_index(levelIndex:int):
 
 def reke_version_to_cigrarette_strength(reke_version):
     return 500+30*reke_version
+
+def get_angle(dx, dy):
+    angle_rad = math.atan2(dy, dx)
+    return rad_to_deg(angle_rad)
+    

@@ -428,6 +428,11 @@ class Scene:
         slime=SlimeEnemy.create(self.mainActor,door1,self.width)
         slime.pos=self.get_random_point()
         self.actors.append(slime)
+
+        if random.random()<0.5:
+            catapult=EnemyCatapult.create(self.mainActor,door1,self.width)
+            catapult.pos=self.get_random_point()
+            self.actors.append(catapult)
     def draw(self): 
         self.background.draw()
         for element in self.elements:
@@ -565,6 +570,7 @@ class EnemyData:
         self.text_y_offset=-35
         self.bind_door=bind_door
         self.isMovingRight=True
+        self.extraActors=[]
     def set_max_health(self,level_count): #设置最大生命值
         max_health=mapping.enemy_health_level_index(level_count)
         self.max_health=max_health
@@ -573,6 +579,8 @@ class EnemyData:
         self.health-=damage
         if self.health<=0:
             self.actor.visible=False
+            for i in self.extraActors:
+                i.visible=False
             if self.bind_door!=None:
                 explode=EnhancedActor("explode")
                 scale(explode,150,150)
@@ -621,6 +629,11 @@ class EnemyData:
                 top=self.actor.y-self.actor.height/2
                 main_actor_rect = Rect((left,top), (self.actor.width, self.actor.height))
                 screen.draw.rect(main_actor_rect, "red")
+            for i in self.extraActors:
+                i.draw()
+            self.draw_extra()
+    def draw_extra(self):
+        pass
 
 
 
@@ -700,6 +713,45 @@ class SlimeEnemy(EnemyData):
 
 class Boss(EnemyData):
     pass
+
+class EnemyCatapult(EnemyData):
+    def __init__(self,bind:GifActor,mainActor:MainActor,door:Door,x_range_lim):
+        super().__init__(bind,mainActor,door,x_range_lim)
+        self.tips="炮台"
+        self.moving_speed=0
+        scale_without_img(self.actor,0.5)
+        self.cd_duaration=2000
+        # bullet=EnhancedActor("bullet")
+        # scale_ratio(bullet,0.4)
+        # self.extraActors.append(bullet)
+    @override
+    def tick(self):
+        super().tick()
+        if not self.actor.visible:
+            return
+        for i in self.extraActors:
+            i.pos=self.actor.pos
+        
+        d_x=self.mainActor.get_position()[0]-self.actor.pos[0]
+        d_y=self.mainActor.get_position()[1]-self.actor.pos[1]
+        angle=mapping.get_angle(d_x,-d_y)-90
+        for i in self.extraActors:
+            i.angle=angle
+        self.actor.angle=angle
+        
+    @override
+    def logic_tick(self):
+        #fire bullet
+        bullet=BulletAttack(self.actor.pos,self.actor.angle,2)
+        sceneInstance.enemy_misiles.append(bullet)
+        self.set_cd()
+    @staticmethod
+    def create(mainActor:MainActor,door:Door,x_range_lim):
+        bind=EnhancedActor("catapult")
+        scale(bind,100,100)
+        attr= EnemyCatapult(bind,mainActor,door,x_range_lim)
+        bind.attr=attr
+        return bind   
 
 class Tool(Actor):
     def __init__(self,image):

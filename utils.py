@@ -39,6 +39,7 @@ def get_empty_actor():
 
 def scale(actor:Actor, new_width, new_height):
     actor._surf=pygame.transform.scale(actor._surf, (new_width, new_height))
+    actor._orig_surf=pygame.transform.scale(actor._orig_surf, (new_width, new_height))
     actor.anchor=(new_width/2,new_height/2)
     actor.width=new_width
     actor.height=new_height
@@ -459,7 +460,26 @@ class CigaretteAttack(Attack):
         enemy.attr.attacked(self.damage)
         direction=normalize(enemy.x-self.x,enemy.y-self.y,0)
         RepelEffect(enemy,direction,self.strength)
-    
+
+class BulletAttack(Attack):
+    def __init__(self,pos,angle,reke_version):
+        super().__init__("bullet")
+        angle=mapping.deg_to_rad(angle)
+        _an=angle+math.pi/2
+        direction=(math.cos(_an),-math.sin(_an))
+        scale_ratio(self,0.3)
+        scale_without_img(self,2)
+        self.angle=mapping.rad_to_deg(angle)
+        self.strength=mapping.reke_version_repel_strength(reke_version)*2
+        self.pos=pos
+        self.damage=mapping.reke_version_cigarette_damage(reke_version)
+        RepelEffect(self,direction,mapping.reke_version_to_cigrarette_strength(reke_version),isVanish=True)
+    @override
+    def attack(self,enemy):
+        enemy.attacked(self.damage)
+        # direction=normalize(enemy.x-self.x,enemy.y-self.y,0)
+        # RepelEffect(enemy,direction,self.strength)
+
 transparent_gray = (100, 100,100, 128)
 cd_counter_list=[]
 x_offset=-1
