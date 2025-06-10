@@ -462,7 +462,7 @@ class CigaretteAttack(Attack):
         RepelEffect(enemy,direction,self.strength)
 
 class BulletAttack(Attack):
-    def __init__(self,pos,angle,reke_version):
+    def __init__(self,pos,angle,):
         super().__init__("bullet")
         angle=mapping.deg_to_rad(angle)
         _an=angle+math.pi/2
@@ -470,10 +470,10 @@ class BulletAttack(Attack):
         scale_ratio(self,0.3)
         scale_without_img(self,2)
         self.angle=mapping.rad_to_deg(angle)
-        self.strength=mapping.reke_version_repel_strength(reke_version)*2
+        # self.strength=mapping.reke_version_repel_strength(reke_version)*2
         self.pos=pos
-        self.damage=mapping.reke_version_cigarette_damage(reke_version)
-        RepelEffect(self,direction,mapping.reke_version_to_cigrarette_strength(reke_version),isVanish=True)
+        self.damage=10
+        RepelEffect(self,direction,400,isVanish=True)
     @override
     def attack(self,enemy):
         enemy.attacked(self.damage)
@@ -517,3 +517,11 @@ class CDableAttackUI:
             screen.draw.filled_rect(Rect(self.top_x,y_offset+self.size_x-cd_height,self.size_x,cd_height),color=transparent_gray)
         screen.draw.rect(Rect(self.top_x,y_offset,self.size_x,self.size_x),color="black")
         draw_text_center(self.tip_message,(self.top_x+self.size_x/2,y_offset+self.size_x+15),"black")
+    @staticmethod
+    def reset():
+        global x_offset
+        cd_counter_list.clear()
+        x_offset=-1
+
+def get_vector(base:Tuple[float,float],to:Tuple[float,float]):
+    return (to[0]-base[0],to[1]-base[1])

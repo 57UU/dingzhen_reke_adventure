@@ -211,7 +211,8 @@ class MainActor:
         
         if self.tip_text_timer>0:
             self.tip_text_timer-=assets.elapsed_time_frame
-
+    def clear(self): #清除
+        CDableAttackUI.reset()
 class Body:
     def __init__(self):
         self.runlefts=[]
@@ -599,12 +600,11 @@ class EnemyData:
             self.cd-=assets.elapsed_time_frame
             return
         
-        x_direction=self.mainActor.get_position()[0]-self.actor.pos[0]
+        x_direction,y_direction=get_vector(self.actor.pos,self.mainActor.actor.pos)
         if x_direction>0:
             self.isMovingRight=True
         elif x_direction<0:
             self.isMovingRight=False
-        y_direction=self.mainActor.get_position()[1]-self.actor.pos[1]
         x_direction,y_direction=normalize(x_direction,y_direction)
         self.actor.x+=x_direction*self.moving_speed
         self.actor.y+=y_direction*self.moving_speed
@@ -742,7 +742,7 @@ class EnemyCatapult(EnemyData):
     @override
     def logic_tick(self):
         #fire bullet
-        bullet=BulletAttack(self.actor.pos,self.actor.angle,2)
+        bullet=BulletAttack(self.actor.pos,self.actor.angle,)
         sceneInstance.enemy_misiles.append(bullet)
         self.set_cd()
     @staticmethod

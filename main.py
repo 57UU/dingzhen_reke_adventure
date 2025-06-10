@@ -36,10 +36,15 @@ keys_pressed=set()
 mainActor=MainActor()
 scene = Scene(WIDTH,HEIGHT,mainActor)
 mainActor.scene=scene
-loseActor=TextActor("你输了",30)
+loseActor=EnhancedActor("lose") #TextActor("你输了",30)
 loseActor.color=(200,25,25)
 loseActor.pos=(WIDTH/2,HEIGHT/2)
-loseActor.visible=False
+
+text=TextActor("按[R]重新开始",20)
+text.color=(0,0,0)
+text.pos=(WIDTH/2,HEIGHT/2+50)
+
+loseActors=[loseActor,text]
 
 mainMenuActors=[]
 title=TextActor("丁真大冒险",50)
@@ -61,11 +66,13 @@ isPause=False
 
 pauseActors=[]
 
-pauseBg=utils.rectangle_actor(WIDTH/2,HEIGHT/2,(123,123,123))
+pauseBg=EnhancedActor("pause")#utils.rectangle_actor(WIDTH/2,HEIGHT/2,(123,123,123))
+scale_ratio(pauseBg,0.5)
 pauseBg.pos=(WIDTH/2,HEIGHT/2)
 pauseActors.append(pauseBg)
 
 pauseText=TextActor("游戏暂停",50)
+pauseText.color=(200,25,25)
 pauseText.pos=(WIDTH/2,HEIGHT/2)
 pauseActors.append(pauseText)
 
@@ -73,6 +80,7 @@ resumeText=TextActor("按ESC继续游戏",20)
 resumeText.pos=(WIDTH/2,HEIGHT/2+50)
 pauseActors.append(resumeText)
 
+isLosed=False
 
 def draw():
     screen.clear()
@@ -89,7 +97,9 @@ def draw():
             draw_text(effects_text,(0,effect_ui_height),utils.effect_type_to_color[effect.type])
             effect_ui_height+=20
     mainActor.draw()
-    loseActor.draw()
+    if isLosed:
+        for i in loseActors:
+            i.draw()
     if isPause:
         for actor in pauseActors:
             actor.draw()
@@ -97,7 +107,7 @@ def draw():
 
 clock = pygame.time.Clock()
 def update():
-    global clock,loseActor
+    global clock,isLosed
     assets.elapsed_time_frame=clock.get_time()
     background.screen=screen
     utils.screen=screen
@@ -114,8 +124,9 @@ def update():
             cd.tick()
         mainActor.tick()
         if mainActor.isLosed:
-            loseActor.visible=True
+            isLosed=True
         else:
+            isLosed=False
             moving=[0,0]
             if keys.RIGHT in keys_pressed:
                 moving[0]=1
@@ -152,7 +163,7 @@ def update():
 
 
 def on_key_down(key):
-    global game_state,isPause
+    global game_state,isPause,mainActor,scene
     keys_pressed.add(key)
     if key==keys.SPACE:
         if game_state==GameState.MAIN_MEUE:
@@ -168,6 +179,11 @@ def on_key_down(key):
         mainActor.use_big_reke()
     if key==keys.K_3:
         mainActor.use_reke_to_health()
+    if key==keys.R and mainActor.isLosed:
+        mainActor.clear()
+        mainActor=MainActor()
+        scene = Scene(WIDTH,HEIGHT,mainActor)
+        game_state=GameState.MAIN_MEUE
 
 def on_key_up(key):
     keys_pressed.remove(key)
