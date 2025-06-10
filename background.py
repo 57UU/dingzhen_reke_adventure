@@ -367,6 +367,10 @@ class Scene:
         poizon=Poizon()
         poizon.pos=self.get_random_point()
         self.tools.append(poizon)
+    def spawn_gift(self):
+        gift=Gift()
+        gift.pos=self.get_random_point()
+        self.tools.append(gift)
     def generate_level(self):
         real_level_count=level_count+1
         x_offset=self.deltaXCount+self.width
@@ -387,6 +391,8 @@ class Scene:
             self.spawn_nicotine()
         if random.random()<0.5:
             self.spawn_poizon()
+        if random.random()<0.5:
+            self.spawn_gift()
         if real_level_count>2 and real_level_count%10==0:
             #boss
             chain=EnhancedActor("chain")
@@ -545,13 +551,25 @@ class RecoverRekePowerDoor(Door):
         super().on_enter(mainActor)
         SlowRecoverEffect(mainActor,)
 
+class RekeUpgradeDoor(Door):
+    def __init__(self,bind:Actor):
+        super().__init__(bind)
+        self.tips="升级锐克"
+    def on_enter(self,mainActor:MainActor):
+        if self.isUsed:
+            return
+        super().on_enter(mainActor)
+        mainActor.reke_version+=1
+        mainActor.set_tip_text(f"锐克升级到{mainActor.reke_version}代")
+
 doors=[
     HealthIncreaseDoor, 
     SpeedIncreaseDoor,
     RecoverRekePowerDoor,
     MaxHealthIncreaseDoor,
     MaxRekePowerIncreaseDoor,
-    RecoverRekePowerDoor
+    RecoverRekePowerDoor,
+    RekeUpgradeDoor,
     ]
 def get_random_door(): #随机生成一个门
     return random.choice(doors)
@@ -824,3 +842,11 @@ class Poizon(Tool):
         self.tips="毒"
     def onUse(self,mainActor:MainActor):
         PoisonEffect(mainActor)
+
+class Gift(Tool):
+    def __init__(self):
+        super().__init__("gift")
+        self.tips="随机礼物"
+    def onUse(self,mainActor:MainActor):
+        door:Door=get_random_door()(mainActor)
+        door.onUse(mainActor)
