@@ -20,6 +20,7 @@ class EnhancedActor(Actor):
     def __init__(self,*args, **kwargs):
         super().__init__(*args,**kwargs)
         self.visible=True
+        self.canMove=True
     def draw(self):
         if self.visible:
             super().draw()
@@ -30,6 +31,7 @@ class EmptyActor(Actor):
         self.__dict__["_rect"] = ZRect((0, 0), (0, 0))
         self._orig_surf=self._surf=placeholder_image
         self.visible=True
+        self.canMove=True
         # self._init_position(pos, anchor, **kwargs)
     def draw(self):
         if self.visible:
@@ -120,6 +122,7 @@ class GifActor(EmptyActor):
         self.visible=True
         gif_actors.append(self)
         self.flip_state=False
+        self.canMove=True
         
         self.frames=get_images_from_folder(gif_path)
 
@@ -297,6 +300,8 @@ class DiffuseEffect(Effect):
 class RepelEffect(Effect):
     def __init__(self,target,direction,strength=300.0,isVanish=False,isShowText=False):
         super().__init__(target,500)
+        if "canMove" in target.__dict__ and not target.canMove:
+            self.time=0
         self.direction=direction
         self.strength=strength
         self.isVanish=isVanish

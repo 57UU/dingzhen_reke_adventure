@@ -1,3 +1,4 @@
+from ast import main
 import pgzrun  # 导入游戏库
 import pgzero.screen
 import pgzero.keyboard
@@ -183,6 +184,7 @@ def on_key_down(key):
         mainActor.clear()
         mainActor=MainActor()
         scene = Scene(WIDTH,HEIGHT,mainActor)
+        mainActor.scene=scene
         game_state=GameState.MAIN_MEUE
 
 def on_key_up(key):

@@ -576,10 +576,13 @@ class EnemyData:
         max_health=mapping.enemy_health_level_index(level_count)
         self.max_health=max_health
         self.health=max_health
+    def onDeath(self): #死亡
+        pass
     def attacked(self,damage): #被攻击
         self.health-=damage
         if self.health<=0:
             self.actor.visible=False
+            self.onDeath()
             for i in self.extraActors:
                 i.visible=False
             if self.bind_door!=None:
@@ -721,6 +724,7 @@ class EnemyCatapult(EnemyData):
         self.moving_speed=0
         scale_without_img(self.actor,0.5)
         self.cd_duaration=2000
+        self.actor.canMove=False
         # bullet=EnhancedActor("bullet")
         # scale_ratio(bullet,0.4)
         # self.extraActors.append(bullet)
@@ -752,6 +756,13 @@ class EnemyCatapult(EnemyData):
         attr= EnemyCatapult(bind,mainActor,door,x_range_lim)
         bind.attr=attr
         return bind   
+    @override
+    def onDeath(self):
+        explode=EnhancedActor("explode")
+        scale(explode,150,150)
+        explode.pos=self.actor.pos
+        ExplosionEffect(explode,time=200,strength=0.5)
+        sceneInstance.elements.append(explode)
 
 class Tool(Actor):
     def __init__(self,image):
