@@ -22,7 +22,7 @@ WIDTH = 1000
 HEIGHT = 600
 TITLE="丁真大冒险"
 
-
+isDevelopment=False
 class GameState(enum.Enum):
     MAIN_MEUE=enum.auto()
     GAME=enum.auto()
@@ -164,16 +164,24 @@ def update():
 
 
 def on_key_down(key):
-    global game_state,isPause,mainActor,scene
+    global game_state,isPause,mainActor,scene,isDevelopment
     keys_pressed.add(key)
     if key==keys.SPACE:
         if game_state==GameState.MAIN_MEUE:
             fontsizeEffect.stop=True
             fontsizeEffect2.stop=True
+            if isDevelopment:
+                mainActor.reke_version=10
+                mainActor.max_health=500
+                mainActor.health=500
+                mainActor.moving_speed=8
             game_state=GameState.GAME
             return
     if  key==keys.ESCAPE and game_state==GameState.GAME:
         isPause=not isPause
+    if key==keys.P and game_state==GameState.MAIN_MEUE:
+        isDevelopment=True
+        assets.debug=True
     if key==keys.K_1:
         mainActor.attack()
     if key==keys.K_2:
