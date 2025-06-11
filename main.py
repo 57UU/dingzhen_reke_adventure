@@ -73,11 +73,12 @@ pauseBg.pos=(WIDTH/2,HEIGHT/2)
 pauseActors.append(pauseBg)
 
 pauseText=TextActor("游戏暂停",50)
-pauseText.color=(200,25,25)
+pauseText.color=(255, 255, 0)
 pauseText.pos=(WIDTH/2,HEIGHT/2)
 pauseActors.append(pauseText)
 
 resumeText=TextActor("按ESC继续游戏",20)
+resumeText.color=(0,0,0)
 resumeText.pos=(WIDTH/2,HEIGHT/2+50)
 pauseActors.append(resumeText)
 
@@ -91,12 +92,13 @@ def draw():
         return
     scene.draw()
 
-    effect_ui_height=HEIGHT/3
-    for effect in effects:
-        if effect.isShowUI:
-            effects_text=effect.get_str()
-            draw_text(effects_text,(0,effect_ui_height),utils.effect_type_to_color[effect.type])
-            effect_ui_height+=20
+    if not isLosed:
+        effect_ui_height=HEIGHT/3
+        for effect in effects:
+            if effect.isShowUI:
+                effects_text=effect.get_str()
+                draw_text(effects_text,(0,effect_ui_height),utils.effect_type_to_color[effect.type])
+                effect_ui_height+=20
     mainActor.draw()
     if isLosed:
         for i in loseActors:

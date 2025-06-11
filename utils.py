@@ -241,6 +241,21 @@ class RandomEnvironment(EmptyActor):
         self._surf=random.choice(environments)
         scale(self,*size)
 
+backgrounds=get_images_from_folder("background")
+
+class RandomBackground(EmptyActor):
+    def __init__(self,size:Tuple[int,int]=None,fileName=None):
+        super().__init__()
+        if size is None:
+            size=(assets.screen_width,assets.screen_height)
+        if fileName is None:
+            self._surf=random.choice(backgrounds)
+        else:
+            self._surf=pygame.image.load("images/"+fileName)
+        scale(self,*size)
+        self.y=assets.screen_height/2
+
+
 import typing
 import enum
 class EffectType(enum.Enum):
@@ -517,6 +532,12 @@ class CDableAttackUI:
     def draw(self):
         ratio = self.cd / self.cd_time
         cd_height = self.size_x * ratio
+
+        # 底背景
+        surf = pygame.Surface((self.size_x, self.size_x), pygame.SRCALPHA)
+        surf.fill((255, 255, 255, 128))  # RGBA 颜色
+        screen.surface.blit(surf, (self.top_x, y_offset ))
+
         self.img.draw()
         
         if cd_height > 0:

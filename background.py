@@ -291,6 +291,10 @@ class Scene:
         self.width=width
         self.height=height
         self.mainActor=mainActor
+
+        mainBg=RandomBackground(fileName="main-bg.png")
+        mainBg.x=width/2
+
         tips=TextActor("按下[1]使用锐克攻击(消耗1格电)\n按下[2]使用大招(消耗3格电)\n按下[3]抽锐克恢复生命值(消耗一格电)\n\n道具[尼古丁]可以升级锐克等级提升攻击伤害\n道具[电池]可以恢复锐克电量\n\n向右移动以开始>>>", 30, color="red")
         tips.pos=(width/2,height/2-30)
 
@@ -301,7 +305,7 @@ class Scene:
         charger.pos=(width*3/4,height*3/4)
 
         self.doors=[] #门 
-        self.elements=[tips,tips2] #场景静态元素
+        self.elements=[mainBg,tips,tips2] #场景静态元素
         self.actors=[] #场景动态元素
         self.tools=[charger] #道具
         self.self_misiles=[] #自身子弹
@@ -390,6 +394,10 @@ class Scene:
         door2.attr=get_random_door()(door2)
         door1.attr.other=door2.attr
         door2.attr.other=door1.attr
+
+        bg=RandomBackground()
+        bg.x=x_offset+assets.screen_width/2
+        self.elements.append(bg)
 
         if random.random()<0.5:
             self.spawn_battery()
