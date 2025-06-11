@@ -261,7 +261,7 @@ class RandomDoor(EmptyActor):
         super().__init__()
         self._surf=random.choice(doors)
         if size is None:
-            size=(20,assets.screen_height/2)
+            size=(30,assets.screen_height/2)
         scale(self,*size)
 
 import typing

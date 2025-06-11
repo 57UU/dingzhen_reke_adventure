@@ -507,40 +507,32 @@ class HealthIncreaseDoor(Door): #增加生命值
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="恢复生命值"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         mainActor.health=mainActor.max_health
 
 class SpeedIncreaseDoor(Door): #增加速度
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="加速"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         mainActor.moving_speed+=0.6
 
 class RecoverRekePowerDoor(Door): #增加锐克电量
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="恢复锐克电量"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         mainActor.reke_power=min(mainActor.reke_max_power,mainActor.reke_power+2)
 
 class MaxHealthIncreaseDoor(Door):
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="增加最大生命值"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         mainActor.max_health+=15
         mainActor.health=(mainActor.max_health+mainActor.health)/2
         mainActor.set_tip_text("最大生命值增加15")
@@ -549,10 +541,8 @@ class MaxRekePowerIncreaseDoor(Door): #增加速度
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="增加锐克最大电量"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         mainActor.reke_max_power+=1
         mainActor.reke_power=math.floor((mainActor.reke_max_power+mainActor.reke_power)/2)
         mainActor.set_tip_text("锐克最大电量增加")
@@ -561,20 +551,16 @@ class RecoverRekePowerDoor(Door):
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="缓慢回血"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         SlowRecoverEffect(mainActor,)
 
 class RekeUpgradeDoor(Door):
     def __init__(self,bind:Actor):
         super().__init__(bind)
         self.tips="升级锐克"
-    def on_enter(self,mainActor:MainActor):
-        if self.isUsed:
-            return
-        super().on_enter(mainActor)
+    @override
+    def onUse(self,mainActor:MainActor):
         mainActor.reke_version+=1
         mainActor.set_tip_text(f"锐克升级到{mainActor.reke_version}代")
 
