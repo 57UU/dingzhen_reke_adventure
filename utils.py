@@ -515,13 +515,19 @@ class CDableAttackUI:
         else:
             self.cd=0
     def draw(self):
-        ratio=self.cd/self.cd_time
-        cd_height=self.size_x*ratio
+        ratio = self.cd / self.cd_time
+        cd_height = self.size_x * ratio
         self.img.draw()
-        if cd_height>0:
-            screen.draw.filled_rect(Rect(self.top_x,y_offset+self.size_x-cd_height,self.size_x,cd_height),color=transparent_gray)
-        screen.draw.rect(Rect(self.top_x,y_offset,self.size_x,self.size_x),color="black")
-        draw_text_center(self.tip_message,(self.top_x+self.size_x/2,y_offset+self.size_x+15),"black")
+        
+        if cd_height > 0:
+            # 创建一个透明 Surface
+            surf = pygame.Surface((self.size_x, cd_height), pygame.SRCALPHA)
+            surf.fill((100, 100, 100, 128))  # RGBA 颜色
+            # 绘制到屏幕
+            screen.surface.blit(surf, (self.top_x, y_offset + self.size_x - cd_height))
+        
+        screen.draw.rect(Rect(self.top_x, y_offset, self.size_x, self.size_x), color="black")
+        draw_text_center(self.tip_message, (self.top_x + self.size_x/2, y_offset + self.size_x + 15), "black")
     @staticmethod
     def reset():
         global x_offset
@@ -530,3 +536,8 @@ class CDableAttackUI:
 
 def get_vector(base:Tuple[float,float],to:Tuple[float,float]):
     return (to[0]-base[0],to[1]-base[1])
+
+def add_alpha_channel(actor:Actor):
+    new_surf = pygame.Surface((width, height), flags=pygame.SRCALPHA, depth=32)
+    new_surf.blit(actor._surf, (0, 0))  # 复制原内容
+    actor._orig_surf=actor._surf=new_surf
