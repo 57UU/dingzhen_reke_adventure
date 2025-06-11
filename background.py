@@ -27,7 +27,7 @@ class MainActor:
         self.health=100 #生命值
         self.max_health=100 #最大生命值
         self.score=0 #分数
-        self.moving_speed=3.0
+        self.moving_speed=4.0
         self.inventory=[] #背包
         self.actor=EnhancedActor("dz")
         img_size=(100,100)
@@ -593,7 +593,7 @@ class EnemyData:
         self.isMovingRight=True
         self.extraActors=[]
         self.useClockwise=useClockwise
-        self.clockwiseSpeed=3
+        self.clockwiseSpeed=2
         if useClockwise:
             self.clockwiseDirection=random.random()<0.5
     def set_max_health(self,level_count): #设置最大生命值
