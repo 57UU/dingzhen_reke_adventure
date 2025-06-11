@@ -384,10 +384,12 @@ class Scene:
     def generate_level(self):
         real_level_count=level_count+1
         x_offset=self.deltaXCount+self.width
-        door1=rectangle_actor(10,self.height/2,(255,255,0))
+        # door1=rectangle_actor(10,self.height/2,(255,255,0))
+        door1=RandomDoor()
         door1.pos=(x_offset,self.height/4)
         self.doors.append(door1)
-        door2=rectangle_actor(10,self.height/2,(255,0,255))
+        # door2=rectangle_actor(10,self.height/2,(255,0,255))
+        door2=RandomDoor()
         door2.pos=(x_offset,self.height*3/4)
         self.doors.append(door2)
         door1.attr=get_random_door()(door1)

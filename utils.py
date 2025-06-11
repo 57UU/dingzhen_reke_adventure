@@ -255,6 +255,14 @@ class RandomBackground(EmptyActor):
         scale(self,*size)
         self.y=assets.screen_height/2
 
+doors=get_images_from_folder("doors")
+class RandomDoor(EmptyActor):
+    def __init__(self,size:Tuple[int,int]=None):
+        super().__init__()
+        self._surf=random.choice(doors)
+        if size is None:
+            size=(20,assets.screen_height/2)
+        scale(self,*size)
 
 import typing
 import enum
