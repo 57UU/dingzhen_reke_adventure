@@ -6,8 +6,8 @@ from pgzero.actor import Actor
 import pygame
 import random
 import math
-from background import *
-import background
+from elements import *
+import elements
 from utils import *
 import utils
 screen : pgzero.screen.Screen
@@ -112,7 +112,7 @@ clock = pygame.time.Clock()
 def update():
     global clock,isLosed
     assets.elapsed_time_frame=clock.get_time()
-    background.screen=screen
+    elements.screen=screen
     utils.screen=screen
     for effect in effects:
         effect.tick()

@@ -310,7 +310,16 @@ class Scene:
         self.tools=[charger] #道具
         self.self_misiles=[] #自身子弹
         self.enemy_misiles=[] #敌人子弹
-        self.lists=[self.doors,self.elements,self.actors,self.tools,self.self_misiles,self.enemy_misiles]
+        self.highPriorityElements=[] #高优先级元素
+        self.lists=[
+            self.doors,
+            self.elements,
+            self.actors,
+            self.tools,
+            self.self_misiles,
+            self.enemy_misiles,
+            self.highPriorityElements,
+            ]
         self.background=rectangle_actor(width,height,(255,255,255))
         self.deltaXCount=0
         self.generate_level()
@@ -472,6 +481,8 @@ class Scene:
             misile.draw()
         for misile in self.enemy_misiles:
             misile.draw()
+        for element in self.highPriorityElements:
+            element.draw()
 
 sceneInstance:Scene
 
@@ -613,7 +624,7 @@ class EnemyData:
                 explode=EnhancedActor("explode")
                 scale(explode,150,150)
                 explode.pos=self.bind_door.pos
-                sceneInstance.elements.append(explode)
+                sceneInstance.highPriorityElements.append(explode)
                 effect=ExplosionEffect(explode,)
                 effect.attach_on_finish_functions.append(self._make_bind_door_invisible)
     def _make_bind_door_invisible(self): 
